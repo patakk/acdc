@@ -731,6 +731,11 @@ function power(p, g) {
 }
 
 
+
+/////////////////////////////////////////////////////
+
+////// COURTESY OF Tagussan https://github.com/Tagussan/BSpline
+
 var BSpline = function(points,degree,copy){
     if(copy){
         this.points = []
