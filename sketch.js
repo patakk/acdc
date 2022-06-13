@@ -356,8 +356,8 @@ function drawSomething(){
             for(var part = 0; part < parts; part++){
                 var p = map(part, 0, parts-1, 0, 1);
                 var env = 1 - pow(abs(p-.5)*2, 2);
-                env = map(part, 0, parts-1, -1, 1);
-                env = abs(Math.cosh(env) - 1. - 1/1.84);
+                //env = map(part, 0, parts-1, -1, 1);
+                //env = abs(Math.cosh(env) - 1. - 1/1.84);
                 var raise = env * maxraise;
 
                 var lx = lerp(x0, lx1, p);
@@ -411,8 +411,8 @@ function drawSomething(){
                 for(var part = 0; part < parts; part++){
                     var p = map(part, 0, parts-1, 0, 1);
                     var env = 1 - pow(abs(p-.5)*2, 2);
-                    env = map(part, 0, parts-1, -1, 1);
-                    env = abs(Math.cosh(env) - 1. - 1/1.84);
+                    //env = map(part, 0, parts-1, -1, 1);
+                    //env = abs(Math.cosh(env) - 1. - 1/1.84);
 
                     var raise = env * maxraise;
                     var beginenv = min(map(part, 0, looselength, 0, 1), 1);
