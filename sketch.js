@@ -1,32 +1,15 @@
 let canvas;
 var pg;
-var svgout;
-var mask;
 var blurpass1;
 var blurpass2;
 var effectpass;
 
-let helvetica;
 let effect;
 let blurH;
 let blurV;
 
-var envelope, osc;
-var envelope2, osc2;
-
 var cl1, cl2, cl3;
 
-var heads = [];
-var ofrq;
-let mic;
-let fft;
-let oscCount = 10;
-let allOscs = [];
-let minFreq = 100;
-let maxFreq = 1000;
-
-var oscillators = [];
-var panners = [];
 var mm;
 var WW, HH;
 var res = 1400;
@@ -747,123 +730,6 @@ function power(p, g) {
         return 1 - 0.5 * pow(2*(1 - p), g);
 }
 
-var zas = 0;
-var started = false;
-
-var autoPanner;
-// route an oscillator through the panner and start it
-var oscillator;
-
-function mouseClicked(){
-    return;
-    globalseed = random(1000000);
-    Tone.start();
-    //getAudioContext().resume();
-    //osc.start();
-    //osc2.start();
-    //envelope.play(osc);
-    //envelope.play(osc2);
-    zas = (zas+1)%2;
-
-    const now = Tone.now()
-    // trigger the attack immediately
-   
-    var N = 3;
-    if(!started){
-        started = true;
-        
-        for(var k = 0; k < 10; k++){
-            const autoPanner = new Tone.AutoPanner("16n").toDestination();
-            // route an oscillator through the panner and start it
-            const oscillator = new Tone.Oscillator(random(100, 1000), "sine").toDestination();
-            panners.push(autoPanner);
-            oscillators.push(oscillator);
-        }
-    }else{
-        for(var k = 0; k < 10; k++){
-            if(k <= N){
-                panners[k].start();
-                oscillators[k].frequency.value = random(100, 1000);
-                //oscillators[k].start();
-            }
-            else{
-                panners[k].stop();
-                //oscillators[k].stop();
-            }
-        }
-    }
-    generateHeads(20, random(10000));
-}
-function keyPressed(){
-    return;
-    globalseed = random(1000000);
-
-    Tone.start();
-    //getAudioContext().resume();
-
-    if(keyCode == 83 || keyCode == 115){ // 's'
-    }
-
-    if(keyCode-48 >=0 && keyCode-48 <= 9){
-        num = (keyCode-48);
-        if(num <= 3)
-            num = num;
-        else if(num == 4)
-            num = 7;
-        else if(num == 5)
-            num = 12;
-        else if(num == 6)
-            num = 15;
-        else if(num == 7)
-            num = 20;
-        else if(num == 8)
-            num = 44;
-        else if(num == 9)
-            num = 255/3;
-
-        var N = 2 + (keyCode-48-1)/4.;
-        if(!started){
-            started = true;
-            for(var k = 0; k < 10; k++){
-                const autoPanner = new Tone.AutoPanner("6n").toDestination();
-                // route an oscillator through the panner and start it
-                const oscillator = new Tone.Oscillator(random(100, 333), "sine").connect(autoPanner);
-                panners.push(autoPanner);
-                oscillators.push(oscillator);
-            }
-        }else{
-            for(var k = 0; k < 10; k++){
-                if(k < N){
-                    //panners[k].start();
-                    oscillators[k].frequency.value = map(pow(random(1), 2), 0, 1, 100, 333);
-                    oscillators[k].volume.value = 1./N*.1;
-                    //oscillators[k].start();
-                }
-                else{
-                    panners[k].stop();
-                    oscillators[k].stop();
-                }
-            }
-        }
-        //getAudioContext().resume();
-        //osc.start();
-        //osc2.start();
-        //envelope.play(osc);
-        //envelope.play(osc2);
-        zas = (zas+1)%2;
-        // trigger the attack immediately
-    
-
-        //getAudioContext().resume();
-        
-        //osc.start();
-        //osc2.start();
-        //envelope.play(osc);
-        //envelope.play(osc2);
-
-        generateHeads(num, 311413);
-    }
-}
 
 var BSpline = function(points,degree,copy){
     if(copy){
