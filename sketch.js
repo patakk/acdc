@@ -344,7 +344,7 @@ function drawSomething(){
                 var raise = env * maxraise;
 
                 var lx = lerp(x0, lx1, p);
-                var ly = lerp(y0, ly1, p) + raise + (200-maxraise)/200*21*pow(noise(lx*0.03, aidx), 7);
+                var ly = lerp(y0, ly1, p) + raise + (250-maxraise)/250*21*pow(noise(lx*0.03, aidx), 7);
                 wirepointsl.push([lx, ly, 0]);
                 
                 if(maxraise < 130 && part < adaptersize && part%1==0){
@@ -411,7 +411,7 @@ function drawSomething(){
                     beginenv *= loosestretch * closenestopole;
         
                     var lx = lerp(x0, lx1, p);
-                    var ly = lerp(y0, ly1, p) + raise + (200-maxraise)/200*77*pow(noise(lx*loosefrq, aidx+31.31), 7) + beginenv;
+                    var ly = lerp(y0, ly1, p) + raise + (250-maxraise)/250*77*pow(noise(lx*loosefrq, aidx+31.31), 7) + beginenv;
                     wirepointslloose.push([lx, ly, 0]);
                 }
             }
