@@ -18,18 +18,34 @@ var res = 1400;
 var zoom = 1.;
 var globalseed = Math.floor(fxrand()*1000000);
 
-var hasmargin = 1.0 * (fxrand()*100 < 3);
+var hasmargin = 1.0 * (fxrand()*100 < 4);
 
 var npoles = 1;
-if(fxrand() * 100 < 3){
+if(fxrand() * 100 < 26){
+    npoles = 2;
+}
+
+if(fxrand() * 100 < 6){
     npoles = Math.floor(2 + 2*fxrand());
 }
 
-window.$fxhashFeatures = {
-    "poles": npoles,
-    "color": hasmargin > .5,
+function getPolesString(value) {
+    if (value == 1) return "one";
+    if (value == 2) return "two";
+    if (value == 3) return "three";
+    if (value == 4) return "four";
 }
 
+function getColorString(value) {
+    if (value) return "yes";
+    else return "no";
+}
+
+
+window.$fxhashFeatures = {
+    "color": getColorString(hasmargin),
+    "poles": getPolesString(npoles),
+}
 
   var palettes0 = [
     '001219-005f73-0a9396-94d2bd-e9d8a6-ee9b00-ca6702-bb3e03-ae2012-9b2226',
@@ -137,16 +153,22 @@ function setup(){
             poleposs.push(pp);
         }
         else{
-            let pp = map(fxrand(), 0, 1, 0.2, 0.8);
-            var flag = true;
-            for(var tt = 0; tt < poleposs.length; tt++){
-                var cp = poleposs[tt];
-                if(abs(cp-pp) < thr){
-                    flag = false;
+            var pp = map(fxrand(), 0, 1, 0.2, 0.8);
+            var tries = 0;
+            while(true){
+                pp = map(fxrand(), 0, 1, 0.2, 0.8);
+                var flag = true;
+                for(var tt = 0; tt < poleposs.length; tt++){
+                    var cp = poleposs[tt];
+                    if(abs(cp-pp) < thr){
+                        flag = false;
+                    }
                 }
+                tries++;
+                if(flag || tries > 30)
+                    break;
             }
-            if(flag)
-                poleposs.push(pp);
+            poleposs.push(pp);
         }
     }
     for(var t = 0; t < poleposs.length; t++){
@@ -154,11 +176,11 @@ function setup(){
         if(poleposs.length == 1)
             p = 1;
         p = pow(p, 2);
-        let zoom = map(p, 0, 1, .6, 1.5);
+        let zoom = map(p, 0, 1, .675, 1.45) + .2*(-.5+fxrand());
         var xshift = .5 + .4*(-.5 + power(noise(t*tfrq), 3));
         xshift = poleposs[t];
         if(poleposs.length == 1){
-            zoom = .7 + .8*fxrand();
+            zoom = .7 + .8*pow(fxrand(), 1.);
             if(fxrand() < -.65)
                 zoom = 1. + .2*fxrand();
             zoom *= resy/resx;
@@ -167,6 +189,9 @@ function setup(){
         }
         drawSomething(xshift, zoom);
     }
+    
+
+
     showall();
     showall();
     fxpreview();
@@ -293,10 +318,10 @@ function drawSomething(xshift=0, zoom=1){
     var polep = map(fxrand(), 0, 1, -resx/2*.5, resx/2*.5)/zoom*resy/resx * .5;
     if(xshift != null)
         polep = map(xshift, 0, 1, -resx/2, resx/2)/zoom*resy/resx;
-    var poletilt = map(fxrand(), 0, 1, -.07, .07);
+    var poletilt = map(fxrand(), 0, 1, -.14, .14);
     var poleheight = map(fxrand(), 0, 1, resy/2*1.7, resy/2*1.92)/(zoom*0.5+1.);
-    var poletopwidth = map(fxrand(), 0, 1, 18, 21);
-    var polebottomwidth = map(fxrand(), 0, 1, 30, 31);
+    var poletopwidth = map(fxrand(), 0, 1, 16, 23);
+    var polebottomwidth = map(fxrand(), 0, 1, 27, 36);
 
     var polex0 = polep;
     var poley0 = resy/2/zoom*resx/resy;
@@ -346,11 +371,14 @@ function drawSomething(xshift=0, zoom=1){
 
     allpoints.push(polepoints);
 
-    var crosstilt0 = -poletilt + map(fxrand(), 0, 1, -PI/3, PI/3)*0;
-    var crosstilt = crosstilt0;
+    var crosstilt0 = 0 + map(fxrand(), 0, 1, -PI/3, PI/3)*0;
+    var crosstilt = 0;
 
     var cross1 = map(fxrand(), 0, 1, .55, .715)*.99;
     var cross2 = map(fxrand(), 0, 1, .95, .95);
+    if(fxrand() < .2){
+        cross1 = map(fxrand(), 0, 1, .25, .515)*.99;
+    }
     //cross1 = cross1 + (1-zoom)*(1-cross1);
     //cross2 = cross2 + (1-zoom)*(1-cross2);
     var ncrosses = round(map(fxrand(), 0, 1, 8, 10));
@@ -368,13 +396,11 @@ function drawSomething(xshift=0, zoom=1){
         var cy = lerp(poley0+(poley1-poley0)*(1.-sf), poley1, pp);
 
         var crosswidth = map(fxrand(), 0, 1, 160, 340);
-        crosswidth = 120 + 140*power(noise(n), 5);
-        crosswidth *= zoom;
+        crosswidth = 120 + 90*power(noise(n), 5);
+        crosswidth *= (.5+.5*zoom) * .8;
         var crossth = map(fxrand(), 0, 1, 7, 9);
         var crosspoints = [];
 
-
-        crosstilt = crosstilt0;
         if(fxrand() < .2){
         }
         if(abs(n-(ncrosses-1))<.02 && fxrand() < .36){
@@ -382,10 +408,10 @@ function drawSomething(xshift=0, zoom=1){
         }
 
 
-        var cx0 = cx+crosswidth/2*cos(crosstilt);
-        var cy0 = cy+sin(crosstilt)*crosswidth/2*.22;
-        var cx1 = cx+crosswidth/2*cos(crosstilt+PI);
-        var cy1 = cy+sin(crosstilt+PI)*crosswidth/2*.22;
+        var cx0 = cx+crosswidth/2*cos(poletilt)+crosswidth/2*cos(crosstilt);
+        var cy0 = cy+sin(poletilt)*crosswidth/2+sin(crosstilt)*crosswidth/2*.22;
+        var cx1 = cx+crosswidth/2*cos(poletilt+PI)+crosswidth/2*cos(crosstilt+PI);
+        var cy1 = cy+sin(poletilt+PI)*crosswidth/2+sin(crosstilt+PI)*crosswidth/2*.22;
         var crosspoints = getStroke(cx0, cy0, cx1, cy1, crossth, crossth, fxrand()*10000, map(fxrand(), 0, 1, .6, .6), 1, .4);
 
         // vertical cross origins
@@ -637,7 +663,7 @@ function drawSomething(xshift=0, zoom=1){
         if(fxrand() < .5)
             wind = -wind;
         var maxdisp0 = 22 + fxrand()*0;
-        for(var qqq = 0; qqq < numqc*0; qqq++){
+        for(var qqq = 0; qqq < numqc; qqq++){
             var qcpoints = [];
             var maxdisp = maxdisp0;
             if(fxrand() < .05)
@@ -725,7 +751,7 @@ function drawSomething(xshift=0, zoom=1){
         pg.endShape(CLOSE);
     }
 
-    // QC
+        // QC
     for(var p = 0; p < allqcpoints.length; p++){
         const currentpoints = allqcpoints[p];
         pg.stroke(cl2);
@@ -769,8 +795,8 @@ function drawSomething(xshift=0, zoom=1){
         for(var t = 0; t < currentpoints.length-1; t++){
             var x = currentpoints[t][0];
             var y = currentpoints[t][1];
-            var dirtlen = 26 + round(fxrand()*3)
-            if(fxrand() < .021 && t < currentpoints.length-30){
+            var dirtlen = 5 + round(fxrand()*3)
+            if(fxrand() < .011 && t < currentpoints.length-30){
                 for(var tt = t; tt < t+dirtlen; tt++){
                     var pp = map(tt, t, t+dirtlen-1, 0, 1);
                     pp = power(1. - 2*(abs(.5-pp)), 2);
@@ -782,7 +808,7 @@ function drawSomething(xshift=0, zoom=1){
                     pg.push();
                     pg.translate(x1, y1);
                     pg.rotate(an);
-                    //pg.ellipse(0, 0, 6, 2.*pp);
+                    pg.ellipse(0, 0, 4, 2.3*pp);
                     pg.pop();
                 }
             }
