@@ -2,6 +2,8 @@ precision highp float;
 
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
+uniform vec3 tintColor;
+uniform vec3 tintColor2;
 uniform vec4 incolor;
 uniform float u_time;
 uniform float noiseamp;
@@ -203,13 +205,7 @@ void main() {
     if(uv.x < marg1 || uv.x > 1.-marg1 || uv.y < marg1*u_resolution.x/u_resolution.y || uv.y > 1.-marg1*u_resolution.x/u_resolution.y){
         outc = vec4(.1);
     }
-    
-    float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
-    salt = .3*(-.15 + smoothstep(.79, .999, salt));
-    outc = .06 + outc*(.94 - .06);
-    outc.rgb += salt;
 
-    outc = outc*noiseamp + (1.-noiseamp)*imgg;
 
     float np = 1.;
     float edgesharpness = 0.98; // maximum is 1.
@@ -222,6 +218,17 @@ void main() {
     }
     np = 1. - np;
     outc = outc + np*(1. - outc - outc);
+    
+    if(hasmargin > 0.01){
+        outc.rgb = (1.-pow(1.-uv.y,1.))*outc.rgb * (outc.r * (1.-pow(1.-uv.y,1.)*.5)) * tintColor2 + (1.-uv.y)*outc.rgb * (outc.r * (1.-pow(1.-uv.y,3.)*.8)) * tintColor;
+    }
+
+    float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
+    salt = .3*(-.15 + smoothstep(.79, .999, salt));
+    outc = .06 + outc*(.9 - .06);
+    outc.rgb += salt;
+
+    outc = outc*noiseamp + (1.-noiseamp)*imgg;
     //outc.b *= 0.995;
     //outc = (.5 + .5*imgg)*imgd*imgd*imgd*imgd + .17*smoothstep(.12, .13, fff(uv*2612., seed+55.631));
     outc.a = 1.0;
