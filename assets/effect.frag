@@ -205,7 +205,7 @@ void main() {
     }
     
     float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
-    salt = (-.15 + smoothstep(.79, .999, salt))*.45;
+    salt = .3*(-.15 + smoothstep(.79, .999, salt));
     outc = .06 + outc*(.94 - .06);
     outc.rgb += salt;
 

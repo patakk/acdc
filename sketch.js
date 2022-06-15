@@ -12,9 +12,9 @@ var cl1, cl2, cl3;
 
 var mm;
 var WW, HH;
-var resx = 1000;
-var resy = 1000;
-var res = 1000;
+var resx = 1400;
+var resy = 1400;
+var res = 1400;
 var zoom = 1. + .7*fxrand();
 if(fxrand() < .65)
     zoom = 1. + .2*fxrand();
@@ -23,18 +23,6 @@ zoom = zoom/(1400/res)
 var globalseed = Math.floor(fxrand()*1000000);
 
 var hasmargin = 1.0 * (fxrand() < .5);
-
-function fxrandom(a, b){
-    if(a && b){
-        return a + fxrand()*(b-a);
-    }
-    if(a && !b){
-        return fxrand()*a;
-    }
-    if(!a && !b){
-        return fxrand();
-    }
-}
 
 function preload() {
     effect = loadShader('assets/effect.vert', 'assets/effect.frag');
@@ -804,7 +792,7 @@ function showall(){
     effect.setUniform('u_resolution', [resx, resy]);
     effect.setUniform('u_mouse',[dir[0], [1]]);
     effect.setUniform('u_time', frameCount);
-    effect.setUniform('incolor', [random(.99, 1.), random(.99, 1.), .99, 1.]);
+    effect.setUniform('incolor', [map(fxrand(), 0, 1, .99, 1.), map(fxrand(), 0, 1, .99, 1.), .99, 1.]);
     effect.setUniform('seed', globalseed);
     effect.setUniform('noiseamp', mouseX/width*0+1);
     effect.setUniform('hasmargin', hasmargin);
