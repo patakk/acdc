@@ -21,7 +21,7 @@ if(fxrand() < .65)
 zoom *= resy/resx;
 var globalseed = Math.round(fxrand()*1000000);
 
-var hasmargin = 1.0 * (fxrand() < 1.5);
+var hasmargin = 1.0 * (fxrand() < .5);
 
 function fxrandom(a, b){
     if(a && b){
