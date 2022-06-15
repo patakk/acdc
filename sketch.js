@@ -12,13 +12,14 @@ var cl1, cl2, cl3;
 
 var mm;
 var WW, HH;
-var resx = 1400;
-var resy = 1400;
-var res = 1400;
+var resx = 1000;
+var resy = 1000;
+var res = 1000;
 var zoom = 1. + .7*fxrand();
 if(fxrand() < .65)
     zoom = 1. + .2*fxrand();
 zoom *= resy/resx;
+zoom = zoom/(1400/res)
 var globalseed = Math.floor(fxrand()*1000000);
 
 var hasmargin = 1.0 * (fxrand() < .5);
