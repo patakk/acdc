@@ -19,7 +19,7 @@ var zoom = 1. + .7*fxrand();
 if(fxrand() < .65)
     zoom = 1. + .2*fxrand();
 zoom *= resy/resx;
-var globalseed = Math.round(fxrand()*1000000);
+var globalseed = Math.floor(fxrand()*1000000);
 
 var hasmargin = 1.0 * (fxrand() < .5);
 
@@ -44,7 +44,7 @@ function preload() {
 function setup(){
     mm = min(windowWidth, windowHeight);
     pixelDensity(2);
-    canvas = createCanvas(mm*resx/resy, mm, WEBGL);
+    canvas = createCanvas(round(mm*resx/resy), mm, WEBGL);
     imageMode(CENTER);
     
     randomSeed(globalseed);
@@ -856,7 +856,7 @@ function rnoise(s, v1, v2){
 
 function windowResized() {
     mm = min(windowWidth, windowHeight);
-    resizeCanvas(mm*resx/resy, mm);
+    resizeCanvas(round(mm*resx/resy), mm);
     showall();
 }
 
