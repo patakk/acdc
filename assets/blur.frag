@@ -171,7 +171,7 @@ vec3 gaussianBlur( sampler2D t, vec2 texUV, vec2 stepSize ){
 void main() {
 
   	vec2 uv = gl_FragCoord.xy*texelSize;
-    vec2 st = uv*vec2(2.2, 5.)*2.2;
+    vec2 st = uv*vec2(2.2, 5.)*.2;
     uv = uv/2.;
     uv.y = 1. - uv.y;
 
@@ -184,7 +184,7 @@ void main() {
     ff = ff + .2;
 	ff = smoothstep(.26+.4, .38+.4, ff);
 
-    vec3 ff2 = vec3(fff(uv*vec2(3.,3.)*2.2, seed+55.2214), fff(uv*vec2(3.,3.)*2.2, seed+123.651), fff(uv*vec2(3.,3.)*2.2, seed+83.8282));
+    vec3 ff2 = vec3(fff(uv*vec2(3.,3.)*1.2, seed+55.2214), fff(uv*vec2(3.,3.)*2.2, seed+123.651), fff(uv*vec2(3.,3.)*2.2, seed+83.8282));
     ff2 -= .5;
     ff2 = ff2/length(ff2);
 
@@ -200,8 +200,8 @@ void main() {
 
 	// use our blur function
 	vec3 blur;
-	//blur = gaussianBlur(tex0, uv, texelSize * ff2.xy * amp*3. * (ff + .0)*0. + texelSize * ff2.xy * amp*3. * (3.*pow(uv.y, 6.)));
-	blur = gaussianBlur(tex0, uv, texelSize * amp*5.*dir * dd);
+	blur = gaussianBlur(tex0, uv, texelSize * ff2.xy * amp*13. * (ff + .0) + 0.*texelSize * ff2.xy * amp*3. * (3.*pow(uv.y, 6.)));
+	//blur = gaussianBlur(tex0, uv, texelSize * amp*15.*dir * dd);
 	//blur = gaussianBlur(tex0, uv, texelSize * ff2.xy * amp*1. * dd); // dd je za blurranje u kutevima
 	//blur = gaussianBlur(tex0, uv, texelSize * ff2.xy * amp);
 

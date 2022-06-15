@@ -6,6 +6,7 @@ uniform vec4 incolor;
 uniform float u_time;
 uniform float noiseamp;
 uniform float seed;
+uniform float hasmargin;
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 varying vec2 vTexCoord;
@@ -175,6 +176,8 @@ void main() {
     outc = blue*bluem + imgd*(1.-bluem) + .15*(-.5 + rndm);
     ff = smoothstep(0.001, 0.004, ff);
     outc = (.35 + .65*imgg)*imgd + .2427*(-.116+smoothstep(.4, .6, rndm));
+    outc = imgc*.55 + imgd*.45;
+    outc = (imgg*.5+(1.-.5)*imgd);
     outc = min(outc, 1.);
     if(imgc.r > .7){
         imgc.rgb = vec3(.7 - .7*smoothstep(.7, .9, imgc.r));
@@ -185,7 +188,7 @@ void main() {
     //outc = imgg + .2*vec4(imgc.r*1.2, imgc.r*.7, 0., 0.0) + .2427*(-.116+smoothstep(.4, .6, rndm));
     //outc = imgg + .2427*(-.116+smoothstep(.4, .6, rndm));
 
-    float mr = -0.02;
+    float mr = -0.018;
     if(uv.x > mr && uv.x < (1.-mr) && uv.y > mr && uv.y < (1.-mr) ){
         //outc = 1. - outc;
         //outc.r *= .51;
@@ -195,12 +198,30 @@ void main() {
         //outc = outc*0. + .1;
     }
 
+    float marg1 = .008;
+    float marg2 = .05 + .0021*(-.5 + fff(uv*82.1 + 281.3131,seed+25.61 ));
+    if(uv.x < marg1 || uv.x > 1.-marg1 || uv.y < marg1*u_resolution.x/u_resolution.y || uv.y > 1.-marg1*u_resolution.x/u_resolution.y){
+        outc = vec4(.1);
+    }
+    
     float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
     salt = (-.15 + smoothstep(.79, .999, salt))*.45;
     outc = .06 + outc*(.94 - .06);
     outc.rgb += salt;
 
     outc = outc*noiseamp + (1.-noiseamp)*imgg;
+
+    float np = 1.;
+    float edgesharpness = 0.98; // maximum is 1.
+    edgesharpness = min(edgesharpness, 1.);
+    if(hasmargin > 0.01){
+        if(uv.x < marg2) np *= smoothstep(marg2*edgesharpness, marg2, uv.x);
+        if(uv.y < marg2*u_resolution.x/u_resolution.y) np *= smoothstep(marg2*u_resolution.x/u_resolution.y*edgesharpness, marg2*u_resolution.x/u_resolution.y, uv.y);
+        if(uv.x > 1.-marg2) np *= smoothstep(1.-marg2*edgesharpness, 1.-marg2, uv.x);
+        if(uv.y > 1.-marg2*u_resolution.x/u_resolution.y) np *= smoothstep(1.-marg2*u_resolution.x/u_resolution.y*edgesharpness, 1.-marg2*u_resolution.x/u_resolution.y, uv.y);
+    }
+    np = 1. - np;
+    outc = outc + np*(1. - outc - outc);
     //outc.b *= 0.995;
     //outc = (.5 + .5*imgg)*imgd*imgd*imgd*imgd + .17*smoothstep(.12, .13, fff(uv*2612., seed+55.631));
     outc.a = 1.0;
