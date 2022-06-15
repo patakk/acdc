@@ -1015,12 +1015,11 @@ function showall(){
     // draw the second pass to the screen
     //image(effectpass, 0, 0, mm-18, mm-18);
     var xx = 0;
-    if(mouseX > width/2)
-        image(effectpass, 0, 0, mm*resx/resy-xx, mm-xx);
-    else
-        image(effectpass, 0, 0, mm*resx/resy-xx, mm-xx);
+    image(effectpass, 0, 0, mm*resx/resy-xx, mm-xx);
 
 }
+
+
 
 function draw(){
     /*let bins = fft.analyze();
@@ -1059,7 +1058,8 @@ function rnoise(s, v1, v2){
 function windowResized() {
     mm = min(windowWidth, windowHeight);
     resizeCanvas(round(mm*resx/resy), mm);
-    showall();
+    var xx = 0;
+    image(effectpass, 0, 0, mm*resx/resy-xx, mm-xx);
 }
 
 function power(p, g) {
