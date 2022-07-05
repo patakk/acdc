@@ -8,48 +8,114 @@ let effect;
 let blurH;
 let blurV;
 
-var cl1, cl2, cl3;
+var cl1, cl2, cl3, cl4;
 
 var mm;
 var WW, HH;
 var resx = 1400;
 var resy = 1400;
 var res = 1400;
-var zoom = 1.;
+var zoom = .8;
 var globalseed = Math.floor(fxrand()*1000000);
 
-var hasmargin = 1.0 * (fxrand()*100 < 4);
+var hasmargin = 1.0 * (fxrand()*100 < 50);
 
-var npoles = 1;
-if(fxrand() * 100 < 26){
-    npoles = 2;
+var isdark = fxrand() < 1.5;
+
+var waa = map(fxrand(), 0, 1, .7, 2);
+
+var detmin = 7;
+var detmax = 16;
+var detu = Math.round(map(power(fxrand(), 6.), 0, 1, detmin, detmax));
+////////////
+
+var numobjects = -1;
+var option = Math.floor(map(fxrand(), 0, 1, 0, 4));
+var ismono = fxrand() < .1;
+var flipbw = fxrand() < .5;
+var hasparallels = fxrand() < .5;
+
+var uniform = fxrand() < .5;
+
+if(uniform){
+    detu = Math.round(map(fxrand(), 0, 1, detmin, detmin+4));
 }
 
-if(fxrand() * 100 < 6){
-    npoles = Math.floor(2 + 2*fxrand());
+var haswarp = (fxrand() < .5) && (option == 0) && uniform;
+haswarp = false;
+haswarp = true;
+waa = 1.1;
+if(ismono){
+    haswarp = true;
+    waa = 1.1;
+    uniform = true;
+    option = 0;
 }
 
-function getPolesString(value) {
-    if (value == 1) return "one";
-    if (value == 2) return "two";
-    if (value == 3) return "three";
-    if (value == 4) return "four";
-}
+var crazy = fxrand() < .25;
+if(crazy && !ismono)
+    waa = -waa;
+if(!haswarp || ismono)
+    crazy = false;
 
-function getColorString(value) {
+var orth = 1.*(fxrand() < .5);
+if(crazy)
+    orth = 1.;
+
+
+console.log('option:', option);
+console.log('ismono:', ismono);
+console.log('flipbw:', flipbw);
+console.log('orth:', orth);
+console.log('haswarp:', haswarp);
+console.log('uniform:', uniform && (!crazy));
+console.log('crazy:', crazy);
+console.log('hasparallels:', hasparallels);
+
+
+function getOrthoString(value) {
     if (value) return "yes";
     else return "no";
 }
 
 
 window.$fxhashFeatures = {
-    "color": getColorString(hasmargin),
-    "poles": getPolesString(npoles),
+    "ortho": getOrthoString(orth),
+    "exploded": getOrthoString(crazy),
+    "mono": getOrthoString(ismono),
+    "uniform": getOrthoString(uniform && (!crazy)),
 }
+///////
 
-  var palettes0 = [
-    '001219-005f73-0a9396-94d2bd-e9d8a6-ee9b00-ca6702-bb3e03-ae2012-9b2226',
-    '001219-005f73-0a9396-94d2bd-e9d8a6-ee9b00-ca6702-bb3e03-ae2012-9b2226'
+
+
+
+var palettes1 = [
+    ['f46036-5b85aa-414770-372248', 0],
+   
+]
+
+var palettes0 = [
+    'f46036-5b85aa-414770-372248',
+    '084c61-db504a-e3b505-4f6d7a-56a3a6',
+    '177e89-084c61-db3a34-ffc857-323031',
+    '32373b-4a5859-f4d6cc-f4b860-c83e4d',
+    'de6b48-e5b181-f4b9b2-daedbd-7dbbc3',
+    'f55d3e-878e88-f7cb15-76bed0',
+    'ffbc42-df1129-bf2d16-218380-73d2de',
+    'fa8334-fffd77-ffe882-388697-54405f',
+    'ed6a5a-f4f1bb-9bc1bc-e6ebe0-36c9c6',
+    '3e5641-a24936-d36135-282b28-83bca9',
+    '664c43-873d48-dc758f-e3d3e4-00ffcd',
+    '304d7d-db995a-bbbbbb-222222-fdc300',
+    '8789c0-45f0df-c2cae8-8380b6-111d4a',
+    '006466-065a60-fb525b-144552-1b3a4b-212f45-272640-fb525b-312244-3e1f47-4d194d',
+    '5fad56-f2c14e-f78154-4d9078-b4431c',
+]
+
+palettes10 = [
+  
+    '5fad56-f2c14e-f78154-4d9078-b4431c',
 ]
 
 var palettes = [];
@@ -93,6 +159,20 @@ function setup(){
         let text = palettes[k];
         let cols = text.split('-')
         let caca = [];
+        var darkenr = .6;
+        var darkeng = .6;
+        var darkenb = .6;
+        if(isdark){
+            darkenr = 1;
+            darkeng = 1;
+            darkenb = 1;
+        }
+        else{
+            var rrr = floor(random(3));
+            if(rrr == 0){
+                darkenr = 1.;
+            }
+        }
         cols.forEach((e)=>{
             var hhh = hexToRgb(e);
             var gg = 0.3*hhh[0] + 0.59*hhh[1] + 0.11*hhh[2];
@@ -103,17 +183,18 @@ function setup(){
             }
             caca.push(hhh);
         });
-        shuffle(caca)
+        //shuffle(caca)
         var coco = [];
-        caca.forEach((e, i)=>{coco.push([(caca[i][0]+.01*map(fxrand(), 0, 1, -.2, .2)), (caca[i][1]+.01*map(fxrand(), 0, 1, -.2, .2)), (caca[i][2]+.01*map(fxrand(), 0, 1, -.2, .2))])});
+        caca.forEach((e, i)=>{coco.push([(1.*caca[i][0]+.01*map(fxrand(), 0, 1, -.2, .2)), (1.*caca[i][1]+.01*map(fxrand(), 0, 1, -.2, .2)), (1.*caca[i][2]+.01*map(fxrand(), 0, 1, -.2, .2))])});
         palettes[k] = coco;
     }
 
     palette = palettes[thidx]
+    bgidx = floor(fxrand()*palette.length)
+    print('palette:', palettes0[thidx])
 
     pg = createGraphics(resx, resy, WEBGL);
     pg.noStroke();
-    pg.colorMode(HSB, 100);
     //pg.strokeJoin(ROUND);
     pg.ortho(-resx/2, resx/2, -resy/2, resy/2, 0, 4444);
     mask = createGraphics(res, res, WEBGL);
@@ -132,64 +213,33 @@ function setup(){
     //noCursor();
 
     //envelope.play(osc);
+    colorMode(RGB, 255);
 
-    cl1 = color(0, 0, 100);
-    cl2 = color(0, 0, 10);
 
     //generateHeads(20, 31114);
     //frameRate(5);
     
     background(100);
     pg.clear();
-    pg.background(cl1);
 
-    var tfrq = .1;
+    cl1 = color(222, 222, 222);
+    cl2 = color(20, 20, 20);
+    cl3 = color(244, 244, 244);
+    cl4 = color(5, 5, 5);
 
-    var poleposs = [];
-    var thr = 0.041;
-    for(var t = 0; t < npoles; t++){
-        if(t == 0){
-            let pp = map(fxrand(), 0, 1, 0.2, 0.8);
-            poleposs.push(pp);
+    pg.background(palette[bgidx][0]*255., palette[bgidx][1]*255., palette[bgidx][2]*255.);
+    
+    if(ismono){
+        if(flipbw){
+            pg.background(cl2);
         }
         else{
-            var pp = map(fxrand(), 0, 1, 0.2, 0.8);
-            var tries = 0;
-            while(true){
-                pp = map(fxrand(), 0, 1, 0.2, 0.8);
-                var flag = true;
-                for(var tt = 0; tt < poleposs.length; tt++){
-                    var cp = poleposs[tt];
-                    if(abs(cp-pp) < thr){
-                        flag = false;
-                    }
-                }
-                tries++;
-                if(flag || tries > 30)
-                    break;
-            }
-            poleposs.push(pp);
+            pg.background(cl1);
         }
     }
-    for(var t = 0; t < poleposs.length; t++){
-        var p = map(t, 0, poleposs.length-1, 0, 1);
-        if(poleposs.length == 1)
-            p = 1;
-        p = pow(p, 2);
-        let zoom = map(p, 0, 1, .675, 1.45) + .2*(-.5+fxrand());
-        var xshift = .5 + .4*(-.5 + power(noise(t*tfrq), 3));
-        xshift = poleposs[t];
-        if(poleposs.length == 1){
-            zoom = .7 + .8*pow(fxrand(), 1.);
-            if(fxrand() < -.65)
-                zoom = 1. + .2*fxrand();
-            zoom *= resy/resx;
-            zoom = zoom/(1400/res);
-            xshift = .5 + .3*(-.5 + power(noise(t*tfrq), 3));
-        }
-        drawSomething(xshift, zoom);
-    }
-    
+
+
+    drawShapes();    
 
 
     showall();
@@ -201,6 +251,325 @@ var s = "HELLO";
 var binsum = 0;
 var timer = -1;
 var num = 20;
+
+function generateBoxes1(){
+    numobjects = Math.round(map(fxrand(), 0, 1, 55, 55))
+    var mix = 100100;
+    var mmx = -101000;
+    var miy = 100100;
+    var mmy = -101000;
+    var miz = 100100;
+    var mmz = -101000;
+    var infos = [];
+    var volume = 200*200*200 * .1;
+    for(var k = 0; k < numobjects; k++){
+        var bx = random(-222, 222)*1.7;
+        var by = random(-222, 222)*1.7;
+        var bz = random(-222, 222);
+        var wx = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*.5;
+        var wy = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
+        var wz = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*.5;
+        var rx = radians(floor(random(3))*45/1 - 45);
+        var ry = radians(random(-30, 30));
+        var rz = radians(random(-30, 30));
+        infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
+        if(bx+wx/2 > mmx) mmx = bx+wx/2;
+        if(bx-wx/2 < mix) mix = bx-wx/2;
+        if(by+cos(rx)*wy/2 > mmy) mmy = by+cos(rx)*wy/2;
+        if(by-cos(rx)*wy/2 < miy) miy = by-cos(rx)*wy/2;
+        if(bz+sin(rx)*wz/2 > mmz) mmz = bz+sin(rx)*wz/2;
+        if(bz-sin(rx)*wz/2 < miz) miz = bz-sin(rx)*wz/2;
+    }
+
+    return {'infos': infos, 'mmx': mmx, 'mix': mix, 'mmy': mmy, 'miy': miy, 'mmz': mmz, 'miz': miz}
+}
+
+function generateBoxes2(){
+    numobjects = Math.round(map(fxrand(), 0, 1, 12, 13))
+    var mix = 100100;
+    var mmx = -101000;
+    var miy = 100100;
+    var mmy = -101000;
+    var miz = 100100;
+    var mmz = -101000;
+    var infos = [];
+    var volume = 200*200*200 * .1;
+    var wwx = random(400, 444);
+    var wx = wwx/numobjects;
+    var wy = random(50, 600);
+    var wz = 600*250/wy;
+    var circs = round(random(1, 4));
+    for(var k = 0; k < numobjects; k++){
+        var bx = map(k, 0, numobjects-1, -wwx/2, wwx/2)
+        var by = random(-222, 222);
+        var bz = random(-222, 222);
+        var rx = map(k, 0, numobjects-1, 0, PI/2*circs)*0 + k*PI/4;
+        var ry = radians(random(-30, 30));
+        var rz = radians(random(-30, 30));
+        infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
+        if(bx+wx/2 > mmx) mmx = bx+wx/2;
+        if(bx-wx/2 < mix) mix = bx-wx/2;
+        if(by+cos(rx)*wy/2 > mmy) mmy = by+cos(rx)*wy/2;
+        if(by-cos(rx)*wy/2 < miy) miy = by-cos(rx)*wy/2;
+        if(bz+sin(rx)*wz/2 > mmz) mmz = bz+sin(rx)*wz/2;
+        if(bz-sin(rx)*wz/2 < miz) miz = bz-sin(rx)*wz/2;
+    }
+
+    return {'infos': infos, 'mmx': mmx, 'mix': mix, 'mmy': mmy, 'miy': miy, 'mmz': mmz, 'miz': miz}
+}
+
+function drawShapes(){
+    
+    pg.push();
+    pg.scale(zoom);
+    pg.scale(1, -1, 1);
+
+    bxs = generateBoxes1();
+    infos = bxs.infos;
+    var mix = bxs.mix;
+    var mmx = bxs.mmx;
+    var miy = bxs.miy;
+    var mmy = bxs.mmy;
+    var miz = bxs.miz;
+    var mmz = bxs.mmz;
+
+    var stepsa = 8;
+    //pg.rotateZ(radians(floor(random(0, 4))*90));
+    pg.push();
+    pg.strokeWeight(8);
+    pg.stroke(255,0,0);
+    //pg.line(0, 0, 0, 666, 0, 0);
+    pg.stroke(0,255,0);
+    //pg.line(0, 0, 0, 0, 666, 0);
+    pg.stroke(0,0,255);
+    //pg.line(0, 0, 0, 0, 0, 666);
+
+    pg.noStroke();
+    pg.fill(100);
+    //pg.sphere(30);
+    pg.pop();
+    pg.rotateY(radians(floor(random(0, 2))*90+45*(1-orth)));
+    pg.translate(-(mix+mmx)/2, -(miy+mmy)/2, -(miz+mmz)/2);
+    //pg.rotateY(PI/2);
+
+
+
+
+    pg.noFill();
+    pg.stroke(cl1);
+    pg.strokeWeight(4);
+
+    for(var k = 0; k < infos.length; k++){
+        mybox(infos[k]);
+    }
+    pg.pop();
+}
+
+function map(v, v1, v2, v3, v4){
+    return (v-v1)/(v2-v1)*(v4-v3)+v3;
+}
+
+function mybox(info){
+    x = info[0];
+    y = info[1];
+    z = info[2];
+    wx = info[3];
+    wy = info[4];
+    wz = info[5];
+    rx = info[6];
+    ry = info[7];
+    rz = info[8];
+    ii = info[9];
+
+
+    var lineprob = 1.0;
+
+    var raaaa1 = random(-wx/2, wx/2);
+    var raaaa2 = random(-wx/2, wx/2);
+    
+    if(option == 0){
+        raaaa1 = random(-0, 0);
+        raaaa2 = random(-0, 0);
+        lineprob = 1.0;
+    }
+    if(option == 1){
+        raaaa1 = random(-wx/2, wx/2);
+        raaaa2 = random(-0, 0);
+        lineprob = 1.0;
+    }
+    if(option == 2){
+        raaaa1 = random(-0, 0);
+        raaaa2 = random(-wx/2, wx/2);
+        lineprob = 1.0;
+    }
+    if(option == 3){
+        raaaa1 = random(-wx/2, wx/2);
+        raaaa2 = random(-wx/2, wx/2);
+        lineprob = 1.0;
+    }
+    //raaaa1 = 0;
+    //raaaa2 = 0;
+
+    pg.push();
+    pg.translate(x, y, z);
+    pg.rotateX(rx);
+    var stepsa = 2;
+    pg.rotateY(radians(floor(random(stepsa-1))*90/stepsa));
+
+    var rras = floor(fxrand()*palette.length)
+    pg.fill(palette[rras][0]*255., palette[rras][1]*255., palette[rras][2]*255.);
+    pg.fill(cl2);
+
+    if(ismono){
+        if(flipbw){
+            pg.fill(cl3);
+        }
+        else{
+            pg.fill(cl4);
+        }
+    }
+    
+    pg.noStroke();
+    pg.push();
+    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    pg.translate(0, 0, 0);
+    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    pg.translate(raaaa1, 0, 0);
+    //pg.fill(cl1);
+    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    pg.pop();
+
+    pg.stroke(cl1);
+    var rr = floor(random(6));
+    if(rr == 0) pg.stroke(222, 66, 66);
+    if(rr == 1) pg.stroke(66, 222, 66);
+    if(rr == 2) pg.stroke(66, 66, 222);
+    if(rr == 3) pg.stroke(222, 222, 66);
+    if(rr == 4) pg.stroke(222, 66, 222);
+    if(rr == 5) pg.stroke(66, 222, 222);
+
+    var ridx1 = floor(fxrand()*palette.length)
+    pg.stroke(palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.);
+    if(ismono){
+        if(flipbw){
+            pg.stroke(cl4);
+        }
+        else{
+            pg.stroke(cl3);
+        }
+    }
+    //pg.stroke(cl2);
+    pg.noFill();
+    pg.push();
+    if(raaaa2 != 0.0) pg.strokeWeight(5);
+    pg.translate(raaaa2, 0, 0);
+    if(!ismono) pg.stroke(palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.);
+    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    pg.pop();
+
+
+
+    if(fxrand() < lineprob){
+        lines(
+            createVector(+wx/2, -wy/2, -wz/2),
+            createVector(+wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, +wy/2, +wz/2),
+            createVector(+wx/2, +wy/2, -wz/2),
+        );
+
+        lines(
+            createVector(-wx/2, -wy/2, -wz/2),
+            createVector(-wx/2, -wy/2, +wz/2),
+            createVector(-wx/2, +wy/2, +wz/2),
+            createVector(-wx/2, +wy/2, -wz/2),
+        );
+        
+        lines(
+            createVector(-wx/2, +wy/2, -wz/2),
+            createVector(-wx/2, +wy/2, +wz/2),
+            createVector(+wx/2, +wy/2, +wz/2),
+            createVector(+wx/2, +wy/2, -wz/2),
+        );
+
+        lines(
+            createVector(-wx/2, -wy/2, -wz/2),
+            createVector(-wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, -wy/2, -wz/2),
+        );
+        
+        lines(
+            createVector(-wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, +wy/2, +wz/2),
+            createVector(-wx/2, +wy/2, +wz/2),
+        );
+
+        lines(
+            createVector(-wx/2, -wy/2, -wz/2),
+            createVector(+wx/2, -wy/2, -wz/2),
+            createVector(+wx/2, +wy/2, -wz/2),
+            createVector(-wx/2, +wy/2, -wz/2),
+        );
+    }
+
+
+    pg.pop();
+}
+
+
+function lines(p1, p2, p3, p4){
+
+    var det = random(detmin, detmax);
+    if(uniform)
+        det = detu;
+    //if(ismono)
+    //    det = 8;
+    var parts = 1 + round(p1.dist(p2) / det);
+
+    for(var pa = 0; pa < parts; pa++){
+        var p = map(pa, 0, parts-1, 0, 1);
+        if(haswarp)
+            p = power(p, waa);
+        var x1 = lerp(p1.x, p2.x, p);
+        var y1 = lerp(p1.y, p2.y, p);
+        var z1 = lerp(p1.z, p2.z, p);
+        var x2 = lerp(p4.x, p3.x, p);
+        var y2 = lerp(p4.y, p3.y, p);
+        var z2 = lerp(p4.z, p3.z, p);
+        pg.line(x1, y1, z1, x2, y2, z2);
+        pg.push();
+        //pg.stroke(cl2);
+        pg.strokeWeight(2);
+        //pg.line(x1, y1, z1, x2, y2, z2);
+        pg.pop();
+    }
+    if(random(10) < 5 && hasparallels)
+        return;
+    if(!uniform && fxrand() <  .5){
+        det = random(detmin, detmax);
+    }
+    //if(ismono)
+    //    det = 8;
+    parts = 1 + round(p1.dist(p4) / det);
+    for(var pa = 0; pa < parts; pa++){
+        var p = map(pa, 0, parts-1, 0, 1);
+        if(haswarp)
+            p = power(p, waa);
+        var x1 = lerp(p1.x, p4.x, p);
+        var y1 = lerp(p1.y, p4.y, p);
+        var z1 = lerp(p1.z, p4.z, p);
+        var x2 = lerp(p2.x, p3.x, p);
+        var y2 = lerp(p2.y, p3.y, p);
+        var z2 = lerp(p2.z, p3.z, p);
+        pg.line(x1, y1, z1, x2, y2, z2);
+        pg.push();
+        pg.stroke(cl2);
+        pg.strokeWeight(2);
+        //pg.line(x1, y1, z1, x2, y2, z2);
+        pg.pop();
+    }
+}
 
 function getStroke(x0, y0, x1, y1, w0, w1, seed, raise0=1, detail0=1, nzamp0=1){
     var strokepoints = [];
@@ -308,622 +677,6 @@ function getThings(x0, y0, x1, y1, w0, w1, seed, anchorprobleft, anchorprobright
     return {'allthings': allthings, 'anchors': anchors}
 }
 
-function drawSomething(xshift=0, zoom=1){
-    var sf = 1;
-    pg.push();
-    pg.scale(zoom);
-
-    var allpoints = []
-
-    var polep = map(fxrand(), 0, 1, -resx/2*.5, resx/2*.5)/zoom*resy/resx * .5;
-    if(xshift != null)
-        polep = map(xshift, 0, 1, -resx/2, resx/2)/zoom*resy/resx;
-    var poletilt = map(fxrand(), 0, 1, -.14, .14);
-    var poleheight = map(fxrand(), 0, 1, resy/2*1.7, resy/2*1.92)/(zoom*0.5+1.);
-    var poletopwidth = map(fxrand(), 0, 1, 16, 23);
-    var polebottomwidth = map(fxrand(), 0, 1, 27, 36);
-
-    var polex0 = polep;
-    var poley0 = resy/2/zoom*resx/resy;
-    var polex1 = polep + poleheight*sin(poletilt);
-    var poley1 = resy/2/zoom - poleheight*cos(poletilt);
-
-    //// 
-
-    polex0 = polep;
-    poley0 = resy/2/zoom*resx/resy+33;
-
-    ////
-
-
-    var d = dist(polex0,poley0,polex1,poley1);
-    var detail = 4;
-    var parts = round(d/detail);
-    var poledir = [polex1-polex0, poley1-poley0];
-    var ple = Math.sqrt(poledir[0]*poledir[0]+poledir[1]*poledir[1])
-    poledir[0] /= ple;
-    poledir[1] /= ple;
-    
-    var polepoints = [];
-    for(var t = 0; t < parts; t++){
-        var p = map(t, 0, parts-1, 0, 1);
-        var y = lerp(poley0, poley1, p);
-        var wnz = 1 + .24*(-.5 + power(noise(y*0.03), 3));
-        var x = lerp(polex0-polebottomwidth/2*wnz, polex1-poletopwidth/2*wnz, p) + map(fxrand(), 0, 1, -.5, .5);
-        polepoints.push([x, y, 0]);
-    }
-    var edgeraise = map(fxrand(), 0, 1, .2, .44);
-    for(var t = 0; t < 10; t++){
-        var env = pow(1-abs(p-.5)*2, .5);
-        var p = map(t, 0, 10-1, 0, 1);
-        var wnz = 1 + .24*(-.5 + power(noise(poley1*0.03), 3));
-        var x = lerp(polex1-poletopwidth/2*wnz, polex1+poletopwidth/2*wnz, p);
-        var y = poley1 - env*poletopwidth*edgeraise;
-        polepoints.push([x, y, 0]);
-    }
-    for(var t = 0; t < parts; t++){
-        var p = map(t, 0, parts-1, 0, 1);
-        var y = lerp(poley1, poley0, p);
-        var wnz = 1 + .24*(-.5 + power(noise(y*0.03, 32), 3));
-        var x = lerp(polex1+poletopwidth/2*wnz, polex0+polebottomwidth/2*wnz, p) + map(fxrand(), 0, 1, -.5, .5);
-        polepoints.push([x, y, 0]);
-    }
-
-    allpoints.push(polepoints);
-
-    var crosstilt0 = 0 + map(fxrand(), 0, 1, -PI/3, PI/3)*0;
-    var crosstilt = 0;
-
-    var cross1 = map(fxrand(), 0, 1, .55, .715)*.99;
-    var cross2 = map(fxrand(), 0, 1, .95, .95);
-    if(fxrand() < .2){
-        cross1 = map(fxrand(), 0, 1, .25, .515)*.99;
-    }
-    //cross1 = cross1 + (1-zoom)*(1-cross1);
-    //cross2 = cross2 + (1-zoom)*(1-cross2);
-    var ncrosses = round(map(fxrand(), 0, 1, 8, 10));
-    ncrosses = round((cross2-cross1)*20);
-    var dn0 = 1;
-    var dn = dn0;
-    var allanchors = [];
-
-    var crossorigins = [];
-    for(var n = 0; n < ncrosses-0.01; n+=dn){
-        var p = map(n, 0, ncrosses-1, 0, 1);
-        var pp = lerp(cross1, cross2, p);
-
-        var cx = lerp(polex0+(polex1-polex0)*(1.-sf), polex1, pp);
-        var cy = lerp(poley0+(poley1-poley0)*(1.-sf), poley1, pp);
-
-        var crosswidth = map(fxrand(), 0, 1, 160, 340);
-        crosswidth = 120 + 90*power(noise(n), 5);
-        crosswidth *= (.5+.5*zoom) * .8;
-        var crossth = map(fxrand(), 0, 1, 7, 9);
-        var crosspoints = [];
-
-        if(fxrand() < .2){
-        }
-        if(abs(n-(ncrosses-1))<.02 && fxrand() < .36){
-            crosstilt = crosstilt0 + PI/2;
-        }
-
-
-        var cx0 = cx+crosswidth/2*cos(poletilt)+crosswidth/2*cos(crosstilt);
-        var cy0 = cy+sin(poletilt)*crosswidth/2+sin(crosstilt)*crosswidth/2*.22;
-        var cx1 = cx+crosswidth/2*cos(poletilt+PI)+crosswidth/2*cos(crosstilt+PI);
-        var cy1 = cy+sin(poletilt+PI)*crosswidth/2+sin(crosstilt+PI)*crosswidth/2*.22;
-        var crosspoints = getStroke(cx0, cy0, cx1, cy1, crossth, crossth, fxrand()*10000, map(fxrand(), 0, 1, .6, .6), 1, .4);
-
-        // vertical cross origins
-        var mox = 0;
-        var moy = 0;
-        if(n == 0 && false){
-            crosswidth = (fxrand()*80 + 20)*zoom;
-            mox = cos(poletilt+PI/2)*100;
-            moy = sin(poletilt+PI/2)*100;
-            cx0 = cx+crosswidth/2*cos(poletilt+PI/2);
-            cy0 = cy+sin(poletilt+PI/2)*crosswidth/2;
-            cx1 = cx+crosswidth/2*cos(poletilt+PI/2+PI);
-            cy1 = cy+sin(poletilt+PI/2+PI)*crosswidth/2;
-            crosspoints = getStroke(cx0+22+mox, cy0+moy, cx1+22+mox, cy1+moy, crossth, crossth, fxrand()*10000, map(fxrand(), 0, 1, .6, .6), 1, .4);
-        }
-
-        dn = dn0;
-        if(fxrand() < .2){
-            dn = dn0/2;
-        }
-        if(fxrand() < 1.51 || n+dn>ncrosses-.01){
-            //if(abs(crosstilt - crosstilt0) < .1 || abs(n-(ncrosses-1))<.02 || true){
-            crossorigins.push([cx, cy])
-            //}
-            //allpoints.push(thingpoints);
-            var things = getThings(cx0+0+mox, cy0+moy, cx1+0+mox, cy1+moy, crossth, crossth, fxrand()*10000, .1+fxrand()*.86, .1+fxrand()*.86, crosstilt);
-            allpoints.push(crosspoints);
-            var allthingpoints = things.allthings;
-            var anchors = things.anchors;
-            anchors.forEach(anchor => {
-                allanchors.push(anchor);
-            });
-            allthingpoints.forEach(thingpoints => {
-                allpoints.push(thingpoints);
-            });
-        }
-    }
-
-    var allwirepoints = [];
-    var allloosewirepoints = [];
-    var ooyl = map(fxrand(), 0, 1, -444, 444);
-    var ooyr = map(fxrand(), 0, 1, -444, 444);
-    var ooy = map(fxrand(), 0, 1, -444, 444);
-
-    var scar = .1 + 5*pow(fxrand(), 3);
-    var scal = .1 + 5*pow(fxrand(), 3);
-
-    var alladapters = [];
-
-    allanchors.forEach((anchor, aidx) => {
-        var x0 = anchor[0];
-        var y0 = anchor[1];
-        var hasloose = anchor[2];
-
-        if(aidx == 20){
-            scar = 5.1-scar;
-            scal = 5.1-scal;
-            ooyl = map(fxrand(), 0, 1, -444, 444);
-            ooyr = map(fxrand(), 0, 1, -444, 444);
-        }
-        for(var side = 0; side < 2; side++){
-            var lx1, ly1;
-            if(side == 0){
-                lx1 = -resx/2/zoom - fxrand()*222-222;
-                ly1 = (y0 - (resy/2/zoom-poleheight*cos(poletilt)*(cross1+cross2)/2))*scal + ooyl;
-            }
-            else{
-                lx1 = +resx/2/zoom + fxrand()*222+222;
-                ly1 = (y0 - (resy/2/zoom-poleheight*cos(poletilt)*(cross1+cross2)/2))*scar - ooyr;
-            }
-            var wirepointsl = [];
-            var wirepointslloose = [];
-            var d = dist(x0, y0, lx1, ly1);
-            var detail = 2;
-            var parts = round(d/detail);
-            var maxraise = 90 + fxrand()*400;
-            var birdfrq = .005+fxrand()*0.015;
-            var bridthr = .6+fxrand()*0.2
-
-            var adaptersize = 10 + 2*fxrand();
-            var adaptersl = [];
-            for(var part = 0; part < parts; part++){
-                var p = map(part, 0, parts-1, 0, 1);
-                var env = 1 - pow(abs(p-.5)*2, 2);
-                //env = map(part, 0, parts-1, -1, 1);
-                //env = abs(Math.cosh(env) - 1. - 1/1.84);
-                var raise = env * maxraise;
-
-                var lx = lerp(x0, lx1, p);
-                var ly = lerp(y0, ly1, p) + raise + (490-maxraise)/490*21*pow(noise(lx*0.03, aidx), 7);
-                wirepointsl.push([lx, ly, 0]);
-                
-                if(maxraise < 130 && part < adaptersize && part%1==0){
-                    // CONNECTION AT THE BEGINNING OF THE WIRE
-                    adaptersl.push([lx, ly]);
-                }
-
-                birdsize = 4 + 4*fxrand();
-                if(fxrand()*1000 < 122 && power(.75*noise(birdfrq*part, 313.313+aidx), 6)>.5){
-                    var offx = 12*(-.5+fxrand());
-                    var bpx1 = lx;
-                    var bpy1 = ly+fxrand()*2+2;
-                    var bpx2 = lx+offx;
-                    var bpy2 = ly-fxrand()*5-birdsize;
-                    var bpw1 = 2+fxrand();
-                    var bpw2 = 6+fxrand();
-                    var bwx1 = bpx1 + .8*(bpx2-bpx1);
-                    var bwy1 = bpy1 + .8*(bpy2-bpy1);
-                    var bwx2 = bpx1-(fxrand()*4+4);
-                    var bwy2 = bpy1+1;
-                    var bqx1 = bpx1 + .8*(bpx2-bpx1);
-                    var bqy1 = bpy1 + .8*(bpy2-bpy1);
-                    var bqx2 = bpx1+(fxrand()*4+4);
-                    var bqy2 = bpy1+1;
-                    allpoints.push(getStroke(bpx1, bpy1, bpx2, bpy2, bpw1, bpw2, fxrand()*10000, 1));
-                    //allpoints.push(getStroke(bwx1, bwy1, bwx2, bwy2, bpw2, bpw1, fxrand()*10000, 1));
-                    //allpoints.push(getStroke(bqx1, bqy1, bqx2, bqy2, bpw2, bpw1, fxrand()*10000, 1));
-                    allpoints.push(getStroke(lx-2, ly-(fxrand()*2+birdsize), lx+offx-(fxrand()*9), ly, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                    allpoints.push(getStroke(lx+2, ly-(fxrand()*2+birdsize), lx+offx+(fxrand()*9), ly, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                    
-                    if(fxrand() < -.3){
-                        var offx = 18*(-.5+fxrand());
-                        var rx = map(fxrand(), 0, 1, -100, 100);
-                        var ry = map(fxrand(), 0, 1, 30, 100);
-                        var birdpoints = getStroke(lx+rx, ly+ry+fxrand()*2+2, lx+rx+offx, ly+ry-fxrand()*5-birdsize, 2+fxrand(), 6+fxrand(), fxrand()*10000, 1);
-                        //allpoints.push(birdpoints);
-                        var heady = (map(fxrand(), 0, 1, 2, 4));
-                        if(fxrand()<.5)
-                            heady *= -1;
-                        allpoints.push(getStroke(lx+rx, ly+ry-heady, lx+rx+offx-(fxrand()*9), ly+ry, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                        allpoints.push(getStroke(lx+rx, ly+ry-heady, lx+rx+offx+(fxrand()*9), ly+ry, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                    }
-                }
-            }
-                // BIRDS
-                
-            for(var part = 0; part < parts; part++){
-                var p = map(part, 0, parts-1, 0, 1);
-                var env = abs(1 - pow(abs(p-.5)*2, 2));
-                //env = map(part, 0, parts-1, -1, 1);
-                //env = abs(Math.cosh(env) - 1. - 1/1.84);
-                var raise = env * maxraise;
-    
-                if(fxrand()*1000 < -122 && power(.75*noise(birdfrq*part, 313.313+aidx), 6)>.5){
-                    var offx = 18*(-.5+fxrand());
-                    var birdpoints = getStroke(lx, ly+fxrand()*2+2, lx+offx, ly-fxrand()*5-3, 2+fxrand(), 6+fxrand(), fxrand()*10000, 1);
-                    allpoints.push(birdpoints);
-                    //allpoints.push(getStroke(lx-2, ly-(fxrand()*2+7), lx+offx-(fxrand()*9), ly, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                    //allpoints.push(getStroke(lx+2, ly-(fxrand()*2+7), lx+offx+(fxrand()*9), ly, 3+fxrand(), 2+fxrand(), fxrand()*10000, 1));
-                }
-            }
-
-            // LOOSE WIRES
-            var looselength = round(20 + fxrand()*22);
-            var loosestretch = 20 + fxrand()*120;
-            var loosefrq = 0.01 + 0.01*fxrand();
-            var bthr1 = .2 + .1*fxrand();
-            var bthr2 = .7 + .3*fxrand();
-            for(var part = 0; part < parts; part++){
-                var p = map(part, 0, parts-1, 0, 1);
-                var env = abs(1 - pow(abs(p-.5)*2, 2));
-                //env = map(part, 0, parts-1, -1, 1);
-                //env = abs(Math.cosh(env) - 1. - 1/1.84);
-
-                var raise = env * maxraise;
-                var beginenv = min(map(part, 0, looselength, 0, 1), 1);
-                if(beginenv < bthr1){
-                    beginenv = map(beginenv, 0, bthr1, 0, 1);
-                    beginenv = power(beginenv, 2);
-                }
-                else{
-                    beginenv = map(beginenv, bthr1, 1, 1, 0);
-                    beginenv = power(beginenv, 2);
-                }
-                beginenv *= (1 + 0*(-.5 + power(noise(part, aidx), 3)));
-                beginenv *= loosestretch * hasloose;
-    
-                var lx = lerp(x0, lx1, p);
-                var ly = lerp(y0, ly1, p) + raise + (490-maxraise)/490*77*pow(noise(lx*loosefrq, aidx+31.31), 7) + beginenv;
-                wirepointslloose.push([lx, ly, 0]);
-            }
-            alladapters.push(adaptersl);
-            allwirepoints.push(wirepointsl);
-            if(hasloose)
-                allloosewirepoints.push(wirepointslloose);
-            else
-                allwirepoints.push(wirepointslloose);
-        }
-    });
-
-
-    // CYLINDERS
-    var hasleft = fxrand() < 1.5;
-    var hasright = fxrand() < 1.5;
-    var bp0 = fxrand()*0.24 + 0.6;
-    var bp1 = bp0 + 0.08 + fxrand()*0.02;
-    bp0 = bp0 + (1-zoom)*(1-bp0);
-    bp1 = bp1 + (1-zoom)*(1-bp1);
-    var bx0 = lerp(polex0, polex1, bp0);
-    var by0 = lerp(poley0, poley1, bp0);
-    var bx1 = lerp(polex0, polex1, bp1);
-    var by1 = lerp(poley0, poley1, bp1);
-    var bsc = 1.3 + .4*fxrand();
-    var bw0 = lerp(polebottomwidth, poletopwidth, bp0)*bsc;
-    var bw1 = lerp(polebottomwidth, poletopwidth, bp1)*bsc;
-    var polep0 = createVector(polex0, poley0);
-    var polep1 = createVector(polex1, poley1);
-    var polev01 = p5.Vector.sub(polep1, polep0);
-    polev01.normalize();
-    var polepe = polev01.copy();
-    polepe.rotate(+PI/2+crosstilt0+2*poletilt);
-    polepe.mult(fxrand()*50);
-    var oua = 0 + 0*.3*fxrand();
-    if(hasright){
-        allpoints.push(getStroke(bx0+polepe.x, by0+polepe.y, bx1+polepe.x, by1+polepe.y, bw0, bw1, fxrand()*10000, .154, 4, .14)); 
-        if(fxrand() < .3){
-            var extlen = 3 + fxrand()*3;
-            allpoints.push(getStroke(bx0+polepe.x-polev01.x*extlen, by0+polepe.y-polev01.y*extlen,  bx1+(bx0-bx1)*oua+polepe.x-polev01.x*extlen, by1+(by0-by1)*oua+polepe.y-polev01.y*extlen, bw0*.7, bw1*.7, fxrand()*10000, .154, 4, .14)); 
-        }
-    }
-    var bcx0 = lerp(polex0, polex1, bp0+(bp1-bp0)*.7);
-    var bcy0 = lerp(poley0, poley1, bp0+(bp1-bp0)*.7);
-    if(hasright) allpoints.push(getStroke(bcx0, bcy0+(by1-by0)*oua, bcx0+polepe.x, bcy0+polepe.y, 12, 12, fxrand()*10000, .5, 4, .14)); 
-    
-    polepe = polev01.copy();
-    polepe.rotate(+PI/2+crosstilt0+2*poletilt);
-    polepe.mult(fxrand()*50);
-    polepe.rotate(PI);
-    var bw0 = lerp(polebottomwidth, poletopwidth, bp0)*bsc;
-    var bw1 = lerp(polebottomwidth, poletopwidth, bp1)*bsc;
-    var oua = 0 + 0*.3*fxrand();
-    if(hasleft){
-        allpoints.push(getStroke(bx0+polepe.x, by0+polepe.y, bx1+polepe.x, by1+polepe.y, bw0, bw1, fxrand()*10000, .154, 4, .14));
-        if(fxrand() < .3){
-            var extlen = 3 + fxrand()*3;
-            allpoints.push(getStroke(bx0+polepe.x-polev01.x*extlen, by0+polepe.y-polev01.y*extlen,  bx1+(bx0-bx1)*oua+polepe.x-polev01.x*extlen, by1+(by0-by1)*oua+polepe.y-polev01.y*extlen, bw0*.7, bw1*.7, fxrand()*10000, .154, 4, .14)); 
-        }
-    }
-    var bcx0 = lerp(polex0, polex1, bp0+(bp1-bp0)*.7);
-    var bcy0 = lerp(poley0, poley1, bp0+(bp1-bp0)*.7);
-    if(hasleft) allpoints.push(getStroke(bcx0, bcy0, bcx0+polepe.x, bcy0+polepe.y, 12, 12, fxrand()*10000, .5, 4, .14)); 
-
-
-    allqcpoints = [];
-    if(fxrand() < 1.5){
-        var numqc = 5 + round(fxrand()*22);
-
-        var wind = 3.14159/2;
-        if(fxrand() < .5)
-            wind = -wind;
-        var maxdisp0 = 22 + fxrand()*0;
-        for(var qqq = 0; qqq < numqc; qqq++){
-            var qcpoints = [];
-            var maxdisp = maxdisp0;
-            if(fxrand() < .05)
-                maxdisp *= 2;
-            var cccc = [];
-
-            var qp = fxrand()*0.16 ;
-            qp = qp + (1-zoom)*(1-qp);
-            var bx0 = lerp(polex0, polex1, qp);
-            var by0 = lerp(poley0, poley1, qp);
-            var bx1 = lerp(polex0, polex1, bp1);
-            var by1 = lerp(poley0, poley1, bp1);
-            if(qqq == 0){
-                bx1 = lerp(polex0, polex1, 1);
-                by1 = lerp(poley0, poley1, 1);
-            }
-            var db = dist(bx0, by0, bx1, by1);
-            var dparts = db/40;
-            for(var dpa = 0; dpa < dparts; dpa++){
-                var bias = 33 * (-.5 + power(noise(dpa*0.1), 6));
-                var dp = map(dpa, 0, dparts, 0, 1);
-                var env = power(1 - 2*abs(.5-dp), 2);
-                env = (env*.75 + .25*pow(dp, 2));
-                if(dpa > dparts-6 && dpa < dparts-2){
-                    env *= 3;
-                }
-                var dx = lerp(bx0, bx1, dp) + map(fxrand(), 0, 1, -maxdisp+bias, maxdisp+bias)*env+ 0* (power(noise(dpa*0.1), 6));
-                var dy = lerp(by0, by1, dp) + map(fxrand(), 0, 1, -maxdisp+bias, maxdisp+bias)*0;
-                if(dpa > dparts-3 && dpa < dparts-1){
-                    dy += map(fxrand(), 0, 1, 0, -50);
-                    dx += map(fxrand(), 0, 1, -60, 60);
-                }
-                cccc.push([dx, dy]);
-            }
-
-            var segle = 16 + 44*fxrand();
-            var current = createVector(bx0, by0);
-            var dir = createVector(poledir[0], poledir[1]);
-            dir.mult(segle);
-
-            if(qqq%2==0){
-                wind *= -1;
-            }
-
-            
-            //cccc.push([current.x, current.y]); current.add(dir);
-            //cccc.push([current.x, current.y]); dir.rotate(wind); dir.mult(.5); current.add(dir);
-            //cccc.push([current.x, current.y]); dir.rotate(wind); dir.mult(2);  current.add(dir); 
-            //cccc.push([current.x, current.y]); dir.rotate(wind); dir.mult(.5); dir.mult(.95+fxrand()*.05); current.add(dir);  dir.rotate(-wind); dir.mult(fxrand()*.4+.01); current.add(dir);
-            //cccc.push([current.x, current.y]); dir.mult(4); current.add(dir);
-            //cccc.push([current.x, current.y]);
-
-            var totalle = 0;
-            for(var pid = 0; pid < cccc.length-1; pid++){
-                totalle += dist(cccc[pid+1][0], cccc[pid+1][1], cccc[pid][0], cccc[pid][1])
-            }
-            var parts = totalle/2;
-
-            var cps = [];
-            var spline = new BSpline(cccc, 3); //making BSpline
-            for(var part = 0; part < parts; part++){
-                var t = map(part, 0, parts-1, 0, 1);
-                var p = spline.calcAt(t); 
-                var nzx = 8*(-.5 + power(noise(p[0]*.03, p[1]*.03, 313.31), 3));
-                var nzy = 8*(-.5 + power(noise(p[0]*.03, p[1]*.03, 222.31), 3));
-                qcpoints.push([p[0]+nzx, p[1]+nzy, 0])
-            }
-
-            allqcpoints.push(qcpoints);
-        }
-    }
-
-    
-    // DRAWING
-    for(var p = 0; p < allpoints.length; p++){
-        const currentpoints = allpoints[p];
-        pg.fill(cl2);
-        pg.noStroke();
-        pg.beginShape(TESS);
-        for(var t = 0; t < currentpoints.length; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            pg.vertex(x, y, 0);
-        }
-        pg.endShape(CLOSE);
-    }
-
-        // QC
-    for(var p = 0; p < allqcpoints.length; p++){
-        const currentpoints = allqcpoints[p];
-        pg.stroke(cl2);
-        pg.noFill();
-        pg.beginShape(TESS);
-        pg.strokeWeight(2*pow(fxrand(), 6)*1+3)
-        for(var t = 0; t < currentpoints.length; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            pg.vertex(x, y, 0);
-        }
-        pg.endShape();
-
-        for(var t = 0; t < currentpoints.length-1; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            if(fxrand() < .041){
-                //pg.ellipse(x, y, 2+fxrand()*4, fxrand()*2);
-                //pg.ellipse(x+2, y, 2+fxrand()*4, fxrand()*1);
-            }
-        }
-    }
-
-    // DRAWIN WIRES
-    for(var p = 0; p < allwirepoints.length; p++){
-        const currentpoints = allwirepoints[p];
-        pg.stroke(cl2);
-        pg.noFill();
-        pg.beginShape(TESS);
-        pg.strokeWeight(2*pow(fxrand(), 6)*1+3)
-        for(var t = 0; t < currentpoints.length-3; t+=3){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            if(x > -(resx/2+30)/zoom && x < (resx/2+30)/zoom && y > -(resy/2+30)/zoom && y < (resy/2+30)/zoom)
-                pg.vertex(x, y, 0);
-        }
-        pg.endShape();
-
-        pg.fill(cl2);
-        pg.noStroke();
-        for(var t = 0; t < currentpoints.length-1; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            var dirtlen = 5 + round(fxrand()*3)
-            if(fxrand() < .011 && t < currentpoints.length-30){
-                for(var tt = t; tt < t+dirtlen; tt++){
-                    var pp = map(tt, t, t+dirtlen-1, 0, 1);
-                    pp = power(1. - 2*(abs(.5-pp)), 2);
-                    var x1 = currentpoints[tt][0];
-                    var y1 = currentpoints[tt][1];
-                    var x2 = currentpoints[tt+1][0];
-                    var y2 = currentpoints[tt+1][1];
-                    var an = atan2(y1-y2, x1-x2);
-                    pg.push();
-                    pg.translate(x1, y1);
-                    pg.rotate(an);
-                    pg.ellipse(0, 0, 4, 2.3*pp);
-                    pg.pop();
-                }
-            }
-        }
-    }
-    
-    for(var p = 0; p < allloosewirepoints.length; p++){
-        const currentpoints = allloosewirepoints[p];
-        pg.stroke(cl2);
-        pg.noFill();
-        pg.beginShape(TESS);
-        pg.strokeWeight(3*pow(fxrand(), 6)*1+5)
-        for(var t = 0; t < currentpoints.length; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            pg.vertex(x, y, 0);
-        }
-        pg.endShape();
-
-        pg.fill(cl2);
-        pg.noStroke();
-        for(var t = 0; t < currentpoints.length-1; t++){
-            var x = currentpoints[t][0];
-            var y = currentpoints[t][1];
-            if(fxrand() < .021){
-                var x1 = currentpoints[t+1][0];
-                var y1 = currentpoints[t+1][1];
-                var an = atan2(y1-y, x1-x);
-                pg.push();
-                pg.translate(x, y);
-                pg.rotate(an);
-                //pg.ellipse(0, 0, 12+fxrand()*3, fxrand()*2+1);
-                //pg.ellipse(0+fxrand()*2-4, 0, 12+fxrand()*3, fxrand()*1+1);
-                pg.pop();
-            }
-        }
-    }
-
-    // NEST
-    if(crossorigins.length > 0 && fxrand() < .2){
-        pg.stroke(cl2);
-        pg.strokeWeight(2*pow(fxrand(), 6)*1+3)
-        pg.noFill();
-        for(var kk = 0; kk < 1; kk++){
-            var ro = floor(fxrand()*crossorigins.length)
-            var cx = crossorigins[ro][0];
-            var cy = crossorigins[ro][1];
-            pg.push();
-            pg.translate(cx, cy);
-            pg.rotate(poletilt)
-            var nradius = 80+27*fxrand();
-            var scan = .35*sqrt(zoom);
-            var nestside = fxrand() < .5;
-            var heightstretch = 1.3 + .6*fxrand();
-            var widthsqueeze = 1.7 + 1*fxrand();
-            var notattop = cy > (poley1 + 50);
-            for(var ny = 0; ny < 8; ny++){
-                var offy = -ny*5;
-                var rsca = map(ny, 0, 3, 0, 1) * zoom;
-                rsca = pow(rsca, .5);
-                rsca = map(rsca, 0, 1, .6, 1);
-                for(var k = 0; k < 35*zoom; k++){
-                    var a1 = radians(map(fxrand(), 0, 1, 0, 360));
-                    var a2 = a1 + radians(map(fxrand(), 0, 1, 44, 70));
-                    var raddp = fxrand();
-                    var radd = rsca * map(raddp, 0, 1, nradius*.3, nradius);
-                    var x1 = radd * cos(a1);
-                    var y1 = radd * sin(a1) * .3 + fxrand()*16 + offy;
-                    var x2 = radd * cos(a2);
-                    var y2 = radd * sin(a2) * .3 + fxrand()*16 + offy;
-                    var d = dist(x1,y1,x2,y2);
-                    var parts = 2 + round(d/20);
-                    pg.beginShape();
-                    for(var pa = 0; pa < parts; pa++){
-                        var ppa = map(pa, 0, parts-1, 0, 1);
-                        var xx = lerp(x1, x2, ppa)+5*0.5*(fxrand()*5-2.5);
-                        var yy = lerp(y1, y2, ppa)+5*0.9*(fxrand()*5-2.5);
-                        if((nestside && xx<0 || !nestside && xx>0) && notattop){
-                           xx /= widthsqueeze; 
-                           yy *= heightstretch; 
-                        }
-                        pg.vertex(xx*scan, yy*scan);
-                    }
-                    pg.endShape();
-                }
-            }
-            pg.pop();
-        }
-    }
-
-    // ADAPTERS
-    pg.fill(cl2);
-    pg.noStroke();
-    for(var oo = 0; oo < alladapters.length; oo++){
-        var adapters = alladapters[oo];
-        var ah = 6 + 2*fxrand();
-        var change = round((.1+fxrand()*.5)*adapters.length);
-        var atilt = -.2 + .4*fxrand();
-        for(var k = 0; k < adapters.length; k++){
-            var alt = .5 + (k%2) * .5;
-            var apx = adapters[k][0];
-            var apy = adapters[k][1];
-            if(k == change)
-                ah = ah*.6;
-            pg.push();
-            pg.translate(apx, apy);
-            pg.rotate(atilt);
-            pg.ellipse(0, 0, 3+fxrand()*2, ah*alt*(1.1 + 1.*power(noise(k*.1, oo), 3))+fxrand()*1);
-            pg.pop();
-        }
-    }
-    pg.pop();
-
-}
-
 function shuffle(array) {
     let currentIndex = array.length
     var randomIndex;
@@ -977,7 +730,7 @@ function showall(){
     blurH.setUniform('texelSize', [1.0/resx, 1.0/resy]);
     blurH.setUniform('direction', [dir[0], [1]]);
     blurH.setUniform('u_time', frameCount*0+globalseed*.01);
-    blurH.setUniform('amp', .13);
+    blurH.setUniform('amp', .03);
     blurH.setUniform('seed', (globalseed*.12134)%33.);
     blurpass1.shader(blurH);
     blurpass1.quad(-1,-1,1,-1,1,1,-1,1);
@@ -1064,9 +817,9 @@ function windowResized() {
 
 function power(p, g) {
     if (p < 0.5)
-        return 0.5 * pow(2*p, g);
+        return 0.5 * Math.pow(2*p, g);
     else
-        return 1 - 0.5 * pow(2*(1 - p), g);
+        return 1 - 0.5 * Math.pow(2*(1 - p), g);
 }
 
 

@@ -142,13 +142,13 @@ void main() {
     vec2 uvg = uv;
     vec2 uvb = uv + vec2(1., 0.)/u_resolution*.7*0.;
     
-    vec2 uvrd = uv - .66*ff*vec2(1., 0.) + 0.*333.5*ff*vec2(1., 0.)/u_resolution*2.;
-    vec2 uvgd = uv - .66*ff*vec2(1., 0.) + 0.*ff*vec2(1., 0.)/u_resolution*2.;
-    vec2 uvbd = uv - .66*ff*vec2(1., 0.) - 0.*333.5*ff*vec2(1., 0.)/u_resolution*2.;
+    vec2 uvrd = uv - 1.61*ff*vec2(1., 0.) + 0.*333.5*ff*vec2(1., 0.)/u_resolution*2.;
+    vec2 uvgd = uv - 1.61*ff*vec2(1., 0.) + 0.*ff*vec2(1., 0.)/u_resolution*2.;
+    vec2 uvbd = uv - 1.61*ff*vec2(1., 0.) - 0.*333.5*ff*vec2(1., 0.)/u_resolution*2.;
 
-    float cr = texture2D(tex0, uvr).r;
-    float cg = texture2D(tex0, uvg).g;
-    float cb = texture2D(tex0, uvb).b;
+    float cr = texture2D(tex0, uvr+vec2(3.,0.)/u_resolution).r;
+    float cg = texture2D(tex0, uvg+vec2(3.,0.)/u_resolution).g;
+    float cb = texture2D(tex0, uvb+vec2(3.,0.)/u_resolution).b;
     vec4 imgc = vec4(cr, cg, cb, 1.0);
     vec4 imgg = texture2D(tex1, uv);
 
@@ -179,14 +179,15 @@ void main() {
     ff = smoothstep(0.001, 0.004, ff);
     outc = (.35 + .65*imgg)*imgd + .2427*(-.116+smoothstep(.4, .6, rndm));
     outc = imgc*.55 + imgd*.45;
-    outc = (imgg*.5+(1.-.5)*imgd);
+    outc = (imgg*.73+(1.-.73)*imgd);
     outc = min(outc, 1.);
     if(imgc.r > .7){
-        imgc.rgb = vec3(.7 - .7*smoothstep(.7, .9, imgc.r));
+        //imgc.rgb = vec3(.7 - .7*smoothstep(.7, .9, imgc.r));
     }
     else if(imgc.r < .5){
-        imgc.rgb = vec3(smoothstep(.4, .5, imgc.r));
+        //imgc.rgb = vec3(smoothstep(.4, .5, imgc.r));
     }
+    //imgc.rgb = vec3(imgc.r+imgc.g+imgc.b)/3.;
     //outc = imgg + .2*vec4(imgc.r*1.2, imgc.r*.7, 0., 0.0) + .2427*(-.116+smoothstep(.4, .6, rndm));
     //outc = imgg + .2427*(-.116+smoothstep(.4, .6, rndm));
 
@@ -211,29 +212,48 @@ void main() {
     float edgesharpness = 0.98; // maximum is 1.
     edgesharpness = min(edgesharpness, 1.);
     if(hasmargin > 0.01){
-        if(uv.x < marg2) np *= smoothstep(marg2*edgesharpness, marg2, uv.x);
-        if(uv.y < marg2*u_resolution.x/u_resolution.y) np *= smoothstep(marg2*u_resolution.x/u_resolution.y*edgesharpness, marg2*u_resolution.x/u_resolution.y, uv.y);
-        if(uv.x > 1.-marg2) np *= smoothstep(1.-marg2*edgesharpness, 1.-marg2, uv.x);
-        if(uv.y > 1.-marg2*u_resolution.x/u_resolution.y) np *= smoothstep(1.-marg2*u_resolution.x/u_resolution.y*edgesharpness, 1.-marg2*u_resolution.x/u_resolution.y, uv.y);
+        //if(uv.x < marg2) np *= smoothstep(marg2*edgesharpness, marg2, uv.x);
+        //if(uv.y < marg2*u_resolution.x/u_resolution.y) np *= smoothstep(marg2*u_resolution.x/u_resolution.y*edgesharpness, marg2*u_resolution.x/u_resolution.y, uv.y);
+        //if(uv.x > 1.-marg2) np *= smoothstep(1.-marg2*edgesharpness, 1.-marg2, uv.x);
+        //if(uv.y > 1.-marg2*u_resolution.x/u_resolution.y) np *= smoothstep(1.-marg2*u_resolution.x/u_resolution.y*edgesharpness, 1.-marg2*u_resolution.x/u_resolution.y, uv.y);
     }
     np = 1. - np;
     outc = outc + np*(1. - outc - outc);
     
     if(hasmargin > 0.01){
-        outc.rgb = (1.-pow(1.-uv.y,1.))*outc.rgb * (outc.r * (1.-pow(1.-uv.y,1.)*.5)) * tintColor2 + (1.-uv.y)*outc.rgb * (outc.r * (1.-pow(1.-uv.y,3.)*.8)) * tintColor;
+        //outc.rgb = (1.-pow(1.-uv.y,1.))*outc.rgb * (outc.r * (1.-pow(1.-uv.y,1.)*.5)) * tintColor2 + (1.-uv.y)*outc.rgb * (outc.r * (1.-pow(1.-uv.y,3.)*.8)) * tintColor;
     }
 
-    float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
-    salt = .3*(-.15 + smoothstep(.79, .999, salt));
-    outc = .06 + outc*(.9 - .06);
-    outc.rgb += salt;
+    vec4 aaaa = texture2D(tex0, uv + vec2(3.,0.)/u_resolution);
+    float bv = 1. -smoothstep(.1, .7, aaaa.r);
+    vec3 bvr = bv * vec3(0., 0., 0.) + (1.-bv)*tintColor;
+    //outc.rgb += bvr*.4;
 
-    outc = outc*noiseamp + (1.-noiseamp)*imgg;
-    //outc.b *= 0.995;
+    float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
+    salt = .2*(-.15 + smoothstep(.96, .999, salt));
+    outc = .026 + outc*(.96 - .026);
+    outc.rgb += salt;
+    
+    float ssalt = randomNoise(uv+seed/1000000.+4.3+.3143+u_time*.0000+fbm(uv)*.02);
+    ssalt = .06*(smoothstep(.5, .999, ssalt));
+    outc.rgb += ssalt;
+    
+    float pepper = randomNoise(uv+seed/1000000.+1.3+.3143+u_time*.0000+fbm(uv)*.02);
+    pepper = .06*(smoothstep(.5, .999, pepper));
+    outc.rgb -= pepper;
+
+    if(hasmargin > 0.4){
+        outc = outc*noiseamp + (1.-noiseamp)*imgg;
+    }
+    else{
+        outc = outc*noiseamp + (1.-noiseamp)*imgg;
+    }   
+     //outc.b *= 0.995;
     //outc = (.5 + .5*imgg)*imgd*imgd*imgd*imgd + .17*smoothstep(.12, .13, fff(uv*2612., seed+55.631));
     outc.a = 1.0;
 
-    gl_FragColor = outc;
+
+    gl_FragColor = outc*.99 + imgc*(1.-.99);
     
     //gl_FragColor = vec4(ff*vec3(1.),1.);
     //gl_FragColor = vec4(1.,0.,0.,1.);
