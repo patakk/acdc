@@ -1,5 +1,7 @@
 let canvas;
 var pg;
+var mask;
+var bgpg;
 var blurpass1;
 var blurpass2;
 var effectpass;
@@ -15,7 +17,7 @@ var WW, HH;
 var resx = 1400;
 var resy = 1400;
 var res = 1400;
-var zoom = .8;
+var zoom = 1;
 var globalseed = Math.floor(fxrand()*1000000);
 
 var hasmargin = 1.0 * (fxrand()*100 < 50);
@@ -24,19 +26,40 @@ var isdark = fxrand() < 1.5;
 
 var waa = map(fxrand(), 0, 1, .7, 2);
 
-var detmin = 7;
+var twodpos = [];
+
+var detmin = 6;
 var detmax = 16;
-var detu = Math.round(map(power(fxrand(), 6.), 0, 1, detmin, detmax));
+var detu = Math.round(map(power(fxrand(), 3.), 0, 1, detmin, detmax));
 ////////////
 
 var numobjects = -1;
-var option = Math.floor(map(fxrand(), 0, 1, 0, 4));
+var option = Math.floor(map(fxrand(), 0, 1, 0, 2));
+option = 0;
 var ismono = fxrand() < .1;
+var hasmonolith = fxrand() < .5;
+var hasgradientlines = fxrand() < 1.5;
 var flipbw = fxrand() < .5;
+var infill = fxrand() < .75;
 var hasparallels = fxrand() < .5;
-
+var allareparallels = fxrand() < .5;
+var hasshiftedlines = fxrand() < -1.5 && !hasparallels && !allareparallels;
+var hashollow = fxrand() < .5;
+var afew = fxrand() < .25;
 var uniform = fxrand() < .5;
+var disintegrated = fxrand() < .5 && !ismono;
+var arrangement = 0;
+if(fxrand() < .3){
+    arrangement = 1;
+} 
 
+var hastallspread = !afew && arrangement == 0 && !ismono && fxrand() < .1;
+
+
+var usemask = (option == 0) && fxrand() < .5;
+
+if(afew)
+    uniform = true;
 if(uniform){
     detu = Math.round(map(fxrand(), 0, 1, detmin, detmin+4));
 }
@@ -52,40 +75,56 @@ if(ismono){
     option = 0;
 }
 
-var crazy = fxrand() < .25;
-if(crazy && !ismono)
-    waa = -waa;
+var crazy = fxrand() < -1.25;
+if(crazy && !ismono && !afew){
+    waa = -map(fxrand(), 0, 1, .5, 2);
+    detu = Math.round(map(fxrand(), 0, 1, detmin/2, detmin/2+1));
+}
 if(!haswarp || ismono)
     crazy = false;
 
-var orth = 1.*(fxrand() < .5);
-if(crazy)
-    orth = 1.;
+var orth = 1.*(fxrand() < -.2);
+if(crazy){
+    orth = 0.;
+    afew = false;
+}
+
+var neocolor = false;
+if(infill && !afew){
+    if(fxrand() < -2.15){
+        neocolor = true;
+    }
+}
+
+if(afew)
+    orth = 0.;
 
 
-console.log('option:', option);
-console.log('ismono:', ismono);
-console.log('flipbw:', flipbw);
-console.log('orth:', orth);
-console.log('haswarp:', haswarp);
-console.log('uniform:', uniform && (!crazy));
-console.log('crazy:', crazy);
-console.log('hasparallels:', hasparallels);
+var yang = (Math.floor(map(fxrand(), 0, 1, 0, 2))*90-45*(1-orth) + 0*map(fxrand(), 0, 1, 0, 3)) / 180 * 3.14159;
+var shoudRotate = fxrand() < .15 && !hastallspread;
 
 
-function getOrthoString(value) {
-    if (value) return "yes";
-    else return "no";
+function getVariantString(disintegrated, usemask) {
+    if(disintegrated)
+        return 'fragmented';
+    if(usemask)
+        return 'cutout';
+    return 'solid';
+}
+
+function getPaletteString(ismono) {
+    if (ismono) return "grayscale";
+    else return "color";
 }
 
 
 window.$fxhashFeatures = {
-    "ortho": getOrthoString(orth),
-    "exploded": getOrthoString(crazy),
-    "mono": getOrthoString(ismono),
-    "uniform": getOrthoString(uniform && (!crazy)),
+    "palette": getPaletteString(ismono),
+    "variant": getVariantString(disintegrated, usemask),
 }
 ///////
+
+console.log(window.$fxhashFeatures)
 
 
 
@@ -97,11 +136,13 @@ var palettes1 = [
 
 var palettes0 = [
     'f46036-5b85aa-414770-372248',
+    'f55d3e-878e88-f7cb15-76bed0',
+    '121212-F05454-30475E-F5F5F5',
+    'F39189-BB8082-6E7582-046582',
     '084c61-db504a-e3b505-4f6d7a-56a3a6',
     '177e89-084c61-db3a34-ffc857-323031',
     '32373b-4a5859-f4d6cc-f4b860-c83e4d',
     'de6b48-e5b181-f4b9b2-daedbd-7dbbc3',
-    'f55d3e-878e88-f7cb15-76bed0',
     'ffbc42-df1129-bf2d16-218380-73d2de',
     'fa8334-fffd77-ffe882-388697-54405f',
     'ed6a5a-f4f1bb-9bc1bc-e6ebe0-36c9c6',
@@ -109,14 +150,52 @@ var palettes0 = [
     '664c43-873d48-dc758f-e3d3e4-00ffcd',
     '304d7d-db995a-bbbbbb-222222-fdc300',
     '8789c0-45f0df-c2cae8-8380b6-111d4a',
-    '006466-065a60-fb525b-144552-1b3a4b-212f45-272640-fb525b-312244-3e1f47-4d194d',
     '5fad56-f2c14e-f78154-4d9078-b4431c',
+    '2FC4B2-12947F-E71414-F17808-Ff4828',
+    '4C3A51-774360-B25068-FACB79-dddddd',
+    '1B2430-51557E-816797-D6D5A8-ff2222',
+    '087e8b-ff5a5f-3c3c3c-f5f5f5-c1839f',
+    'EB5353-394359-F9D923-36AE7C-368E7C-187498',
+    '4C3F61-B958A5-9145B6-FF5677-65799B-C98B70',
+    '006466-065a60-fb525b-144552-1b3a4b-212f45-272640-fb525b-312244-3e1f47-4d194d',
+    '283d3b-197278-edddd4-c44536-772e25-0d3b66-faf0ca-f4d35e-ee964b-f95738-fe5d26-f2c078-faedca-c1dbb3-7ebc89-3d5a80-98c1d9-e0fbfc-ee6c4d-293241',
+    '99e2b4-99d4e2-f94144-f3722c-f8961e-f9844a-f9c74f-90be6d-43aa8b-4d908e-577590-277da1',
+    '080708-3772ff-df2935-fdca40-e6e8e6-d8dbe2-a9bcd0-58a4b0-373f51-1b1b1e',
+    'ea8c55-e27e52-d96f4e-cd5c46-ba4035-dddddd-972320-81171b-540804-3c0000-006868',
 ]
 
-palettes10 = [
-  
-    '5fad56-f2c14e-f78154-4d9078-b4431c',
+
+palettes0 = [
+    'f46036-5b85aa-414770-372248-f55d3e-878e88-f7cb15-76bed0-9cfffa-acf39d-b0c592-a97c73-af3e4d',
+    '121212-F05454-30475E-F5F5F5-F39189-BB8082-6E7582-046582',
+    '084c61-db504a-e3b505-4f6d7a-56a3a6-177e89-084c61-db3a34-ffc857-323031',
+    '32373b-4a5859-f4d6cc-f4b860-c83e4d-de6b48-e5b181-f4b9b2-daedbd-7dbbc3',
+    'fa8334-fffd77-ffe882-388697-54405f-ffbc42-df1129-bf2d16-218380-73d2de',
+    '3e5641-a24936-d36135-282b28-83bca9-ed6a5a-f4f1bb-9bc1bc-e6ebe0-36c9c6',
+    '304d7d-db995a-bbbbbb-222222-fdc300-664c43-873d48-dc758f-e3d3e4-00ffcd',
+    '5fad56-f2c14e-f78154-4d9078-b4431c-8789c0-45f0df-c2cae8-8380b6-111d4a',
+    '4C3A51-774360-B25068-FACB79-dddddd-2FC4B2-12947F-E71414-F17808-Ff4828',
+    '087e8b-ff5a5f-3c3c3c-f5f5f5-c1839f-1B2430-51557E-816797-D6D5A8-ff2222',
+    '4C3F61-B958A5-9145B6-FF5677-65799B-C98B70-EB5353-394359-F9D923-36AE7C-368E7C-187498',
+    '283d3b-197278-edddd4-c44536-772e25-0d3b66-faf0ca-f4d35e-ee964b-f95738-fe5d26-f2c078-faedca-c1dbb3-7ebc89-3d5a80-98c1d9-e0fbfc-ee6c4d-293241',
+    '99e2b4-99d4e2-f94144-f3722c-f8961e-f9844a-f9c74f-90be6d-43aa8b-4d908e-577590-277da1',
+    '080708-3772ff-df2935-fdca40-e6e8e6-d8dbe2-a9bcd0-58a4b0-373f51-1b1b1e',
 ]
+
+if(neocolor){
+    palettes0 = [
+        'ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff'
+    ]
+}
+
+var pall = '';
+palettes0.forEach((element, ind) => {
+    if(ind < palettes0.length-1)
+        pall = pall + element + '-';
+    else
+        pall = pall + element
+});
+palettes0 = [pall]
 
 var palettes = [];
 palettes0.forEach(element => {
@@ -124,7 +203,7 @@ palettes0.forEach(element => {
 });
 
 
-function hexToRgb(hex) {
+function hex2rgb(hex) {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? [
       parseInt(result[1], 16)/255.,
@@ -133,6 +212,109 @@ function hexToRgb(hex) {
     ] : null;
 }
 
+function hsl2rgb(h, s, l){
+    var r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    var ltns = .299*r + .587*g + .114*b;
+    r = min(1., max(0., r * l / ltns));
+    g = min(1., max(0., g * l / ltns));
+    b = min(1., max(0., b * l / ltns));
+
+    return [r, g, b];
+}
+
+function hsv2rgb(h, s, v) {
+    var r, g, b, i, f, p, q, t;
+    if (arguments.length === 1) {
+        s = h.s, v = h.v, h = h.h;
+    }
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return [r, g, b];
+}
+
+function rgb2hsl(r, g, b){
+    r /= 255, g /= 255, b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+
+    if(max == min){
+        h = s = 0; // achromatic
+    }else{
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max){
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    return [h, s, l];
+}
+
+function rgb2hsv(r, g, b) {
+    let rabs, gabs, babs, rr, gg, bb, h, s, v, diff, diffc;
+    rabs = r;
+    gabs = g;
+    babs = b;
+    v = Math.max(rabs, gabs, babs),
+    diff = v - Math.min(rabs, gabs, babs);
+    diffc = c => (v - c) / 6 / diff + 1 / 2;
+    if (diff == 0) {
+        h = s = 0;
+    } else {
+        s = diff / v;
+        rr = diffc(rabs);
+        gg = diffc(gabs);
+        bb = diffc(babs);
+
+        if (rabs === v) {
+            h = bb - gg;
+        } else if (gabs === v) {
+            h = (1 / 3) + rr - bb;
+        } else if (babs === v) {
+            h = (2 / 3) + gg - rr;
+        }
+        if (h < 0) {
+            h += 1;
+        }else if (h > 1) {
+            h -= 1;
+        }
+    }
+    return [h, s, v];
+}
 
 var palette;
 var thidx;
@@ -148,6 +330,7 @@ function setup(){
     mm = min(windowWidth, windowHeight);
     pixelDensity(2);
     canvas = createCanvas(round(mm*resx/resy), mm, WEBGL);
+    canvas.id('maincanvas');
     imageMode(CENTER);
     
     randomSeed(globalseed);
@@ -174,12 +357,12 @@ function setup(){
             }
         }
         cols.forEach((e)=>{
-            var hhh = hexToRgb(e);
+            var hhh = hex2rgb(e);
             var gg = 0.3*hhh[0] + 0.59*hhh[1] + 0.11*hhh[2];
-            if(gg < .5){
-                hhh[0] *= .5/gg;
-                hhh[1] *= .5/gg;
-                hhh[2] *= .5/gg;
+            if(gg < .3){
+                hhh[0] *= .3/gg;
+                hhh[1] *= .3/gg;
+                hhh[2] *= .3/gg;
             }
             caca.push(hhh);
         });
@@ -190,18 +373,27 @@ function setup(){
     }
 
     palette = palettes[thidx]
-    bgidx = floor(fxrand()*palette.length)
-    print('palette:', palettes0[thidx])
 
     pg = createGraphics(resx, resy, WEBGL);
     pg.noStroke();
     //pg.strokeJoin(ROUND);
     pg.ortho(-resx/2, resx/2, -resy/2, resy/2, 0, 4444);
-    mask = createGraphics(res, res, WEBGL);
+    mask = createGraphics(resx, resy, WEBGL);
     mask.noStroke();
     mask.ortho(-resx/2, resx/2, -resy/2, resy/2, 0, 4444);
+    mask.clear();
+    mask.background(0);
+    mask.noStroke();
+    mask.fill(255);
+    
+    bgpg = createGraphics(res, res, WEBGL);
+    bgpg.noStroke();
+    bgpg.ortho(-resx/2, resx/2, -resy/2, resy/2, 0, 4444);
+    bgpg.clear();
+    bgpg.background(0);
+    bgpg.noStroke();
+    bgpg.fill(255);
     //mask.strokeJoin(ROUND);
-    colorMode(HSB, 100);
 
     blurpass1 = createGraphics(resx, resy, WEBGL);
     blurpass2 = createGraphics(resx, resy, WEBGL);
@@ -222,30 +414,74 @@ function setup(){
     background(100);
     pg.clear();
 
-    cl1 = color(222, 222, 222);
-    cl2 = color(20, 20, 20);
-    cl3 = color(244, 244, 244);
-    cl4 = color(5, 5, 5);
+    cl1 = color(200, 200, 200);
+    cl2 = color(30, 30, 30);
+    cl3 = color(222, 222, 222);
+    cl4 = color(30, 30, 30);
 
-    pg.background(palette[bgidx][0]*255., palette[bgidx][1]*255., palette[bgidx][2]*255.);
+    var sshf = 0;
+    if(!usemask)
+        sshf = 3;
+    bgidx = floor(fxrand()*(palette.length));
+    var cou = 0;
+    var rrr = rgb2hsv(palette[(bgidx+sshf)%palette.length][0], palette[(bgidx+sshf)%palette.length][1], palette[(bgidx+sshf)%palette.length][2]);
+    while(rrr[1] > .8 && cou < 4){
+        bgidx = floor(fxrand()*(palette.length));
+        rrr = rgb2hsv(palette[(bgidx+sshf)%palette.length][0], palette[(bgidx+sshf)%palette.length][1], palette[(bgidx+sshf)%palette.length][2])
+        cou++;
+    }
+    pg.background(palette[(bgidx+3)%palette.length][0]*255, palette[(bgidx+3)%palette.length][1]*255, palette[(bgidx+3)%palette.length][2]*255);
+    //if(usemask)
+    //    pg.background(222);
+
+    bgpg.background(palette[(bgidx+0)%palette.length][0]*255, palette[(bgidx+0)%palette.length][1]*255, palette[(bgidx+0)%palette.length][2]*255);
     
+    //pg.background(127);
+    //bgpg.background(188);
+
     if(ismono){
-        if(flipbw){
+        if(fxrand() < .5){
             pg.background(cl2);
+            bgpg.background(red(cl2)+7, green(cl2)+7, blue(cl2)+7);
         }
         else{
             pg.background(cl1);
+            bgpg.background(red(cl1)+9, green(cl1)+9, blue(cl1)+9);
         }
     }
 
 
     drawShapes();    
 
-
     showall();
     showall();
     fxpreview();
+    //savepost();
 }
+
+/*function savepost(){
+    var dataimg = document.getElementById('maincanvas');
+    var imgURL = dataimg.toDataURL();
+    console.log(imgURL);
+    $.ajax({
+      type: "POST",
+      url: "http://url/take_pic", //I have doubt about this url, not sure if something specific must come before "/take_pic"
+      data: imgURL,
+      success: function(data) {
+        if (data.success) {
+          alert('Your file was successfully uploaded!');
+        } else {
+          alert('There was an error uploading your file!');
+        }
+      },
+      error: function(data) {
+        alert('There was an error uploading your file!');
+      }
+    }).done(function() {
+      console.log("Sent");
+    });
+}*/
+
 
 var s = "HELLO";
 var binsum = 0;
@@ -253,7 +489,10 @@ var timer = -1;
 var num = 20;
 
 function generateBoxes1(){
-    numobjects = Math.round(map(fxrand(), 0, 1, 55, 55))
+    numobjects = Math.round(map(fxrand(), 0, 1, 45, 100))
+    if(afew){
+        numobjects = Math.round(map(fxrand(), 0, 1, 5, 15))
+    }
     var mix = 100100;
     var mmx = -101000;
     var miy = 100100;
@@ -264,14 +503,29 @@ function generateBoxes1(){
     var volume = 200*200*200 * .1;
     for(var k = 0; k < numobjects; k++){
         var bx = random(-222, 222)*1.7;
-        var by = random(-222, 222)*1.7;
-        var bz = random(-222, 222);
-        var wx = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*.5;
+        var by = random(-222, 222)*(1+ 2.7*hastallspread);
+        var bz = random(-222, 222)*1;
+        var wx = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*(.5 + random(.2, .5)*afew);
         var wy = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
-        var wz = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*.5;
-        var rx = radians(floor(random(3))*45/1 - 45);
+        var wz = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*(.5 + random(.2, .5)*afew);
+        var rx = radians(floor(power(noise(wy*.01), 3)*4)*45/1 - 45);
         var ry = radians(random(-30, 30));
         var rz = radians(random(-30, 30));
+        if(k < 1 && hasmonolith){
+            var bx = random(-444, 444)*0;
+            var by = random(-0, 0)*0;
+            var bz = -random(333, 555)*0;
+            var area = res * res * .4;
+            var aar = sqrt(area);
+            wx = random(aar*.5, aar*1/.5);
+            wy = area / wx;
+            wz = random(66, 77);
+            rx = floor(fxrand()*4)*45/1;
+            while(rx == 90){
+                rx = floor(fxrand()*4)*45/1;
+            }
+            rx = radians(rx);
+        }
         infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
         if(bx+wx/2 > mmx) mmx = bx+wx/2;
         if(bx-wx/2 < mix) mix = bx-wx/2;
@@ -279,13 +533,26 @@ function generateBoxes1(){
         if(by-cos(rx)*wy/2 < miy) miy = by-cos(rx)*wy/2;
         if(bz+sin(rx)*wz/2 > mmz) mmz = bz+sin(rx)*wz/2;
         if(bz-sin(rx)*wz/2 < miz) miz = bz-sin(rx)*wz/2;
+        mask.push();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.pop();
     }
 
     return {'infos': infos, 'mmx': mmx, 'mix': mix, 'mmy': mmy, 'miy': miy, 'mmz': mmz, 'miz': miz}
 }
 
 function generateBoxes2(){
-    numobjects = Math.round(map(fxrand(), 0, 1, 12, 13))
+    numobjects = Math.round(map(pow(fxrand(), 2), 0, 1, 9, 23))
+    if(afew){
+        numobjects = Math.round(map(fxrand(), 0, 1, 3, 9))
+    }
     var mix = 100100;
     var mmx = -101000;
     var miy = 100100;
@@ -296,14 +563,17 @@ function generateBoxes2(){
     var volume = 200*200*200 * .1;
     var wwx = random(400, 444);
     var wx = wwx/numobjects;
-    var wy = random(50, 600);
-    var wz = 600*250/wy;
-    var circs = round(random(1, 4));
+    var wy = wx * random(.9, 4.4);
+    var wz = random(600, 800);
+    var circs = round(map(pow(fxrand(), 3), 0, 1, .15, 1));
+    var inc = map(fxrand(), 0, 1, PI/12, PI/3);
+    if(fxrand() < .25)
+        inc = PI/4;
     for(var k = 0; k < numobjects; k++){
-        var bx = map(k, 0, numobjects-1, -wwx/2, wwx/2)
+        var bx = map(k, 0, numobjects, -(wwx/2+2), (wwx/2+2))
         var by = random(-222, 222);
         var bz = random(-222, 222);
-        var rx = map(k, 0, numobjects-1, 0, PI/2*circs)*0 + k*PI/4;
+        var rx = map(k, 0, numobjects-1, 0, PI/2*circs)*0 + k*inc;
         var ry = radians(random(-30, 30));
         var rz = radians(random(-30, 30));
         infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
@@ -313,18 +583,107 @@ function generateBoxes2(){
         if(by-cos(rx)*wy/2 < miy) miy = by-cos(rx)*wy/2;
         if(bz+sin(rx)*wz/2 > mmz) mmz = bz+sin(rx)*wz/2;
         if(bz-sin(rx)*wz/2 < miz) miz = bz-sin(rx)*wz/2;
+        mask.push();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.pop();
     }
 
     return {'infos': infos, 'mmx': mmx, 'mix': mix, 'mmy': mmy, 'miy': miy, 'mmz': mmz, 'miz': miz}
 }
 
+function generateBoxes3(){
+    numobjects = Math.round(map(fxrand(), 0, 1, 45, 55))
+    if(afew){
+        numobjects = Math.round(map(fxrand(), 0, 1, 5, 15))
+    }
+    var mix = 100100;
+    var mmx = -101000;
+    var miy = 100100;
+    var mmy = -101000;
+    var miz = 100100;
+    var mmz = -101000;
+    var infos = [];
+    var volume = 200*200*200 * .1;
+    for(var k = 0; k < numobjects; k++){
+        var bx = random(-33, 33)*1.7;
+        var by = random(-33, 33)*1.7;
+        var bz = random(-33, 33)*1.7;
+        var wx = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
+        var wy = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
+        var wz = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
+        var rx = radians(floor(random(4))*45/1 - 45);
+        var ry = radians(random(-30, 30));
+        var rz = radians(random(-30, 30));
+        infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
+        if(bx+wx/2 > mmx) mmx = bx+wx/2;
+        if(bx-wx/2 < mix) mix = bx-wx/2;
+        if(by+cos(rx)*wy/2 > mmy) mmy = by+cos(rx)*wy/2;
+        if(by-cos(rx)*wy/2 < miy) miy = by-cos(rx)*wy/2;
+        if(bz+sin(rx)*wz/2 > mmz) mmz = bz+sin(rx)*wz/2;
+        if(bz-sin(rx)*wz/2 < miz) miz = bz-sin(rx)*wz/2;
+        mask.push();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(+wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, +wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, +wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, -wz/2))); mask.pop();
+        mask.push(); mask.translate(bx, by, bz); mask.rotateX(rx); twodpos.push(getScreenPos(mask, createVector(-wx/2, -wy/2, +wz/2))); mask.pop();
+        mask.pop();
+    }
+
+    return {'infos': infos, 'mmx': mmx, 'mix': mix, 'mmy': mmy, 'miy': miy, 'mmz': mmz, 'miz': miz}
+}
+
+
+function debugxyz(pg){
+    pg.push();
+    pg.strokeWeight(8);
+    pg.stroke(255,0,0);
+    pg.line(0, 0, 0, 666, 0, 0);
+    pg.stroke(0,255,0);
+    pg.line(0, 0, 0, 0, 666, 0);
+    pg.stroke(0,0,255);
+    pg.line(0, 0, 0, 0, 0, 666);
+
+    pg.noStroke();
+    pg.fill(100);
+    pg.sphere(30);
+    pg.pop();
+}
+
 function drawShapes(){
     
+
+    mask.push();
+    if(shoudRotate){
+        mask.rotateZ(PI/2);
+    }
+    mask.rotateY(yang);
+    //mask.rotateX(2.3*yang);
+    
+    if(arrangement == 0)
+        bxs = generateBoxes1();
+    if(arrangement == 1)
+        bxs = generateBoxes2();
+    mask.pop();
+
     pg.push();
     pg.scale(zoom);
     pg.scale(1, -1, 1);
-
-    bxs = generateBoxes1();
+    
+    mask.push();
+    mask.scale(zoom);
+    mask.scale(1, -1, 1);
+    
     infos = bxs.infos;
     var mix = bxs.mix;
     var mmx = bxs.mmx;
@@ -333,23 +692,32 @@ function drawShapes(){
     var miz = bxs.miz;
     var mmz = bxs.mmz;
 
-    var stepsa = 8;
-    //pg.rotateZ(radians(floor(random(0, 4))*90));
-    pg.push();
-    pg.strokeWeight(8);
-    pg.stroke(255,0,0);
-    //pg.line(0, 0, 0, 666, 0, 0);
-    pg.stroke(0,255,0);
-    //pg.line(0, 0, 0, 0, 666, 0);
-    pg.stroke(0,0,255);
-    //pg.line(0, 0, 0, 0, 0, 666);
+    var center = createVector(0, 0);
+    for(var k = 0; k < twodpos.length; k++){
+        center.add(twodpos[k]);
+    }
+    center.div(twodpos.length);
 
-    pg.noStroke();
-    pg.fill(100);
-    //pg.sphere(30);
-    pg.pop();
-    pg.rotateY(radians(floor(random(0, 2))*90+45*(1-orth)));
-    pg.translate(-(mix+mmx)/2, -(miy+mmy)/2, -(miz+mmz)/2);
+    var stepsa = 8;
+    //debugxyz(pg);
+
+    if(!hasmonolith) pg.translate(-center.x, -center.y);
+    if(shoudRotate){
+        pg.rotateZ(PI/2);
+    }
+    pg.rotateY(yang);
+    //pg.translate(-(mix+mmx)/2, -(miy+mmy)/2, -(miz+mmz)/2);
+    //pg.rotateX(random(-.1,.1));
+    //pg.rotateY(random(-.1,.1));
+
+    if(!hasmonolith) mask.translate(-center.x, -center.y);
+    if(shoudRotate){
+        mask.rotateZ(PI/2);
+    }
+    mask.rotateY(yang);
+    //mask.translate(-(mix+mmx)/2, -(miy+mmy)/2, -(miz+mmz)/2);
+    //mask.translate(random(-33, 33), random(-33, 33), random(-33, 33));
+    //mask.scale(1.1);
     //pg.rotateY(PI/2);
 
 
@@ -362,11 +730,179 @@ function drawShapes(){
     for(var k = 0; k < infos.length; k++){
         mybox(infos[k]);
     }
+    
+
     pg.pop();
+    mask.pop();
+   
+    for(var k = 0; k < twodpos.length; k++){
+        pg.push();
+        pg.scale(zoom);
+        pg.scale(1, -1, 1);
+        pg.translate(twodpos[k].x-center.x, twodpos[k].y-center.y, 500);
+        //pg.sphere(11);
+        pg.pop();
+    }
 }
+
+const nonZero = function(a) {
+    const FLOAT_EPS = 1.4E-45;
+    return FLOAT_EPS <= Math.abs(a);
+}
+
+
+const m00 = 0; const m01 = 4; const m02 = 8;  const m03 = 12;
+const m10 = 1; const m11 = 5; const m12 = 9;  const m13 = 13;
+const m20 = 2; const m21 = 6; const m22 = 10; const m23 = 14;
+const m30 = 3; const m31 = 7; const m32 = 11; const m33 = 15;
+
+
+
+const screenXImpl_w = function(pg, x, y, z, w) {
+
+    const projection = pg._renderer.uPMatrix.mat4;
+
+    let ox =
+      projection[m00]*x + projection[m01]*y + projection[m02]*z + projection[m03]*w;
+    const ow =
+      projection[m30]*x + projection[m31]*y + projection[m32]*z + projection[m33]*w;
+
+    if (nonZero(ow)) {
+      ox /= ow;
+    }
+    const sx = res * (1 + ox) / 2.0;
+    return sx;
+  }
+
+
+const screenYImpl_w = function(pg, x, y, z, w) {
+
+    const projection = pg._renderer.uPMatrix.mat4;
+
+    let oy =
+      projection[m10]*x + projection[m11]*y + projection[m12]*z + projection[m13]*w;
+    const ow =
+      projection[m30]*x + projection[m31]*y + projection[m32]*z + projection[m33]*w;
+
+    if (nonZero(ow)) {
+      oy /= ow;
+    }
+    let sy = res * (1 + oy) / 2.0;
+    // Turning value upside down because of Processing's inverted Y axis.
+    sy = res - sy;
+    return sy;
+  }
+
+
+const _screenX = function(pg, x, y, z) {
+
+    const modelview = pg._renderer.uMVMatrix.mat4;
+
+    const ax =
+      modelview[m00]*x + modelview[m01]*y + modelview[m02]*z + modelview[m03];
+    const ay =
+      modelview[m10]*x + modelview[m11]*y + modelview[m12]*z + modelview[m13];
+    const az =
+      modelview[m20]*x + modelview[m21]*y + modelview[m22]*z + modelview[m23];
+    const aw =
+      modelview[m30]*x + modelview[m31]*y + modelview[m32]*z + modelview[m33];
+    return screenXImpl_w(pg, ax, ay, az, aw);
+}
+
+
+
+
+const _screenY = function(pg, x, y, z) {
+
+    const modelview = pg._renderer.uMVMatrix.mat4;
+
+    const ax =
+      modelview[m00]*x + modelview[m01]*y + modelview[m02]*z + modelview[m03];
+    const ay =
+      modelview[m10]*x + modelview[m11]*y + modelview[m12]*z + modelview[m13];
+    const az =
+      modelview[m20]*x + modelview[m21]*y + modelview[m22]*z + modelview[m23];
+    const aw =
+      modelview[m30]*x + modelview[m31]*y + modelview[m32]*z + modelview[m33];
+    return screenYImpl_w(pg, ax, ay, az, aw);
+}
+
+
+const _screenZ = function(pg, x, y, z, w) {
+
+    const projection = pg._renderer.uPMatrix.mat4;
+
+    let oz =
+      projection[m20]*x + projection[m21]*y + projection[m22]*z + projection[m23]*w;
+    const ow =
+      projection[m30]*x + projection[m31]*y + projection[m32]*z + projection[m33]*w;
+
+    if (nonZero(ow)) {
+      oz /= ow;
+    }
+    const sz = (oz + 1) / 2.0;
+    return sz;
+}
+
 
 function map(v, v1, v2, v3, v4){
     return (v-v1)/(v2-v1)*(v4-v3)+v3;
+}
+
+function mysimplebox(pgr, wx, wy, wz){
+    pgr.push();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(-wx/2, -wy/2, -wz/2);
+    pgr.vertex(-wx/2, -wy/2, +wz/2);
+    pgr.vertex(-wx/2, +wy/2, +wz/2);
+    pgr.vertex(-wx/2, +wy/2, -wz/2);
+    pgr.endShape();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(-wx/2, +wy/2, -wz/2);
+    pgr.vertex(-wx/2, +wy/2, +wz/2);
+    pgr.vertex(+wx/2, +wy/2, +wz/2);
+    pgr.vertex(+wx/2, +wy/2, -wz/2);
+    pgr.endShape();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(-wx/2, -wy/2, +wz/2);
+    pgr.vertex(-wx/2, +wy/2, +wz/2);
+    pgr.vertex(+wx/2, +wy/2, +wz/2);
+    pgr.vertex(+wx/2, -wy/2, +wz/2);
+    pgr.endShape();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(+wx/2, -wy/2, -wz/2);
+    pgr.vertex(+wx/2, -wy/2, +wz/2);
+    pgr.vertex(+wx/2, +wy/2, +wz/2);
+    pgr.vertex(+wx/2, +wy/2, -wz/2);
+    pgr.endShape();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(-wx/2, -wy/2, -wz/2);
+    pgr.vertex(-wx/2, -wy/2, +wz/2);
+    pgr.vertex(+wx/2, -wy/2, +wz/2);
+    pgr.vertex(+wx/2, -wy/2, -wz/2);
+    pgr.endShape();
+    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.beginShape();
+    pgr.vertex(-wx/2, -wy/2, -wz/2);
+    pgr.vertex(-wx/2, +wy/2, -wz/2);
+    pgr.vertex(+wx/2, +wy/2, -wz/2);
+    pgr.vertex(+wx/2, -wy/2, -wz/2);
+    pgr.endShape();
+    pgr.pop();
+    return;
+}
+
+function getScreenPos(pg, pos){
+    var sx, sy;
+    var sx = _screenX(pg, pos.x, pos.y, pos.z) - pg.width/2;
+    var sy = _screenY(pg, pos.x, pos.y, pos.z) - pg.height/2;
+
+    return createVector(sx, sy);
 }
 
 function mybox(info){
@@ -381,7 +917,7 @@ function mybox(info){
     rz = info[8];
     ii = info[9];
 
-
+    mask.fill(ii+1);
     var lineprob = 1.0;
 
     var raaaa1 = random(-wx/2, wx/2);
@@ -394,7 +930,7 @@ function mybox(info){
     }
     if(option == 1){
         raaaa1 = random(-wx/2, wx/2);
-        raaaa2 = random(-0, 0);
+        raaaa2 = random(-wx/2, wx/2);
         lineprob = 1.0;
     }
     if(option == 2){
@@ -413,12 +949,24 @@ function mybox(info){
     pg.push();
     pg.translate(x, y, z);
     pg.rotateX(rx);
+    mask.push();
+    mask.translate(x, y, z);
+    mask.rotateX(rx);
     var stepsa = 2;
-    pg.rotateY(radians(floor(random(stepsa-1))*90/stepsa));
+    var yyang = 0*radians(floor(random(stepsa-1))*90/stepsa);
+    //pg.rotateY(yyang);
+    //mask.rotateY(yyang);
+    mask.rotateX(random(-.05, .05));
+    mask.rotateY(random(-.05, .05));
+    mask.rotateZ(random(-.05, .05));
+    mask.translate(random(-18, 18), random(-18, 18), random(-18, 18));
+    //mask.scale(random(.9, .9));
 
     var rras = floor(fxrand()*palette.length)
-    pg.fill(palette[rras][0]*255., palette[rras][1]*255., palette[rras][2]*255.);
     pg.fill(cl2);
+
+    if(infill)
+        pg.fill(palette[rras][0]*255., palette[rras][1]*255., palette[rras][2]*255.);
 
     if(ismono){
         if(flipbw){
@@ -429,15 +977,28 @@ function mybox(info){
         }
     }
     
+    var invs = fxrand() < .5 && hashollow && ii != 0;
+    if(ismono)
+        invs = false;
+    var haslines = fxrand() < lineprob && !invs || afew;
     pg.noStroke();
     pg.push();
-    pg.box(wx-0.000, wy-0.000, wz-0.000);
-    pg.translate(0, 0, 0);
-    pg.box(wx-0.000, wy-0.000, wz-0.000);
-    pg.translate(raaaa1, 0, 0);
+    mask.push();
+    if(!invs || afew){
+        mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
+        mysimplebox(mask, wx-0.000, wy-0.000, wz-0.000);
+    }
+    //pg.translate(0, 0, 0);
+    //mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
+    //if(ii != 0) pg.translate(raaaa1, 0, 0);
     //pg.fill(cl1);
-    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    if(!invs || afew){
+        mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
+        mysimplebox(mask, wx-0.000, wy-0.000, wz-0.000);
+    }
+    mask.pop();
     pg.pop();
+
 
     pg.stroke(cl1);
     var rr = floor(random(6));
@@ -458,30 +1019,23 @@ function mybox(info){
             pg.stroke(cl3);
         }
     }
-    //pg.stroke(cl2);
     pg.noFill();
     pg.push();
     if(raaaa2 != 0.0) pg.strokeWeight(5);
-    pg.translate(raaaa2, 0, 0);
+    //pg.translate(raaaa2, 0, 0);
     if(!ismono) pg.stroke(palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.);
-    pg.box(wx-0.000, wy-0.000, wz-0.000);
+    if(!hasshiftedlines) mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
     pg.pop();
 
-
-
-    if(fxrand() < lineprob){
+    if(haslines){
+        
         lines(
             createVector(+wx/2, -wy/2, -wz/2),
             createVector(+wx/2, -wy/2, +wz/2),
             createVector(+wx/2, +wy/2, +wz/2),
             createVector(+wx/2, +wy/2, -wz/2),
-        );
-
-        lines(
-            createVector(-wx/2, -wy/2, -wz/2),
-            createVector(-wx/2, -wy/2, +wz/2),
-            createVector(-wx/2, +wy/2, +wz/2),
-            createVector(-wx/2, +wy/2, -wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(0, 1, 1),  
         );
         
         lines(
@@ -489,13 +1043,8 @@ function mybox(info){
             createVector(-wx/2, +wy/2, +wz/2),
             createVector(+wx/2, +wy/2, +wz/2),
             createVector(+wx/2, +wy/2, -wz/2),
-        );
-
-        lines(
-            createVector(-wx/2, -wy/2, -wz/2),
-            createVector(-wx/2, -wy/2, +wz/2),
-            createVector(+wx/2, -wy/2, +wz/2),
-            createVector(+wx/2, -wy/2, -wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(1, 0, 1),  
         );
         
         lines(
@@ -503,6 +1052,26 @@ function mybox(info){
             createVector(+wx/2, -wy/2, +wz/2),
             createVector(+wx/2, +wy/2, +wz/2),
             createVector(-wx/2, +wy/2, +wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(1, 1, 0),  
+        );
+
+        lines(
+            createVector(-wx/2, -wy/2, -wz/2),
+            createVector(-wx/2, -wy/2, +wz/2),
+            createVector(-wx/2, +wy/2, +wz/2),
+            createVector(-wx/2, +wy/2, -wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(0, 1, 1),  
+        );
+
+        lines(
+            createVector(-wx/2, -wy/2, -wz/2),
+            createVector(-wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, -wy/2, +wz/2),
+            createVector(+wx/2, -wy/2, -wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(1, 0, 1),  
         );
 
         lines(
@@ -510,15 +1079,39 @@ function mybox(info){
             createVector(+wx/2, -wy/2, -wz/2),
             createVector(+wx/2, +wy/2, -wz/2),
             createVector(-wx/2, +wy/2, -wz/2),
+            [palette[ridx1][0]*255., palette[ridx1][1]*255., palette[ridx1][2]*255.],    
+            createVector(1, 1, 0),  
         );
     }
 
 
     pg.pop();
+    mask.pop();
 }
 
 
-function lines(p1, p2, p3, p4){
+function lines(p1, p2, p3, p4, col, vv){
+
+    var an = radians(floor(random(4))*90);
+    if(vv.x == 0){
+        vv.y = 44*cos(an);
+        vv.z = 44*sin(an);
+    }
+    if(vv.y == 0){
+        vv.x = 44*cos(an);
+        vv.z = 44*sin(an);
+    }
+    if(vv.z == 0){
+        vv.y = 44*cos(an);
+        vv.x = 44*sin(an);
+    }
+
+    if(hasshiftedlines){
+        p1.add(vv);
+        p2.add(vv);
+        p3.add(vv);
+        p4.add(vv);
+    }
 
     var det = random(detmin, detmax);
     if(uniform)
@@ -527,48 +1120,112 @@ function lines(p1, p2, p3, p4){
     //    det = 8;
     var parts = 1 + round(p1.dist(p2) / det);
 
-    for(var pa = 0; pa < parts; pa++){
-        var p = map(pa, 0, parts-1, 0, 1);
-        if(haswarp)
-            p = power(p, waa);
-        var x1 = lerp(p1.x, p2.x, p);
-        var y1 = lerp(p1.y, p2.y, p);
-        var z1 = lerp(p1.z, p2.z, p);
-        var x2 = lerp(p4.x, p3.x, p);
-        var y2 = lerp(p4.y, p3.y, p);
-        var z2 = lerp(p4.z, p3.z, p);
-        pg.line(x1, y1, z1, x2, y2, z2);
-        pg.push();
-        //pg.stroke(cl2);
-        pg.strokeWeight(2);
-        //pg.line(x1, y1, z1, x2, y2, z2);
-        pg.pop();
+    for(var k = 0; k < 2; k++){
+        var pa, pb, pc, pd;
+        if(k == 0){
+            pa = p1; pb = p2; pc = p4; pd = p3;
+        }
+        if(k == 1){
+            pa = p1; pb = p4; pc = p2; pd = p3;
+            if(random(10) < 5 && hasparallels || allareparallels)
+                return;
+            if(!uniform && fxrand() <  .5){
+                det = random(detmin, detmax);
+            }
+            
+            parts = 1 + round(p1.dist(p4) / det);
+        }
+
+        var thdir = p5.Vector.sub(pb, pa);
+        thdir.normalize();
+        thdir.mult(1);
+        for(var pp = 0; pp < parts; pp++){
+            var p = map(pp, 0, parts-1, 0, 1);
+            if(haswarp)
+                p = power(p, waa);
+
+            if(!isFinite(p)){
+                p = fxrand();
+            }
+            
+            var x1 = lerp(pa.x, pb.x, p);
+            var y1 = lerp(pa.y, pb.y, p);
+            var z1 = lerp(pa.z, pb.z, p);
+            var x2 = lerp(pc.x, pd.x, p);
+            var y2 = lerp(pc.y, pd.y, p);
+            var z2 = lerp(pc.z, pd.z, p);
+
+            var col2 = [col[0], col[1], col[2]];
+            var coll2 = [min(255, max(0, col2[0]*random(.8, 1.12))), min(255, max(0, col2[1]*random(.8, 1.12))), min(255, max(0, col2[2]*random(.8, 1.12)))]
+            var hsv1 = rgb2hsv(...coll2);
+            var rgb1 = hsv2rgb(...hsv1);
+            rgb1[0] *= 255;
+            rgb1[1] *= 255;
+            rgb1[2] *= 255;
+            pg.stroke(...coll2)
+
+            if(ismono){
+                if(flipbw){
+                    pg.stroke(cl4);
+                }
+                else{
+                    pg.stroke(cl3);
+                }
+            }
+
+            if(hasgradientlines){
+                pg.line(x1+thdir.x, y1+thdir.y, z1+thdir.z, x2, y2, z2);
+                pg.line(x1-thdir.x, y1-thdir.y, z1-thdir.z, x2, y2, z2);
+            }
+            else{
+                pg.line(x1, y1, z1, x2, y2, z2);
+            }
+        }
     }
-    if(random(10) < 5 && hasparallels)
-        return;
-    if(!uniform && fxrand() <  .5){
-        det = random(detmin, detmax);
-    }
+
     //if(ismono)
     //    det = 8;
-    parts = 1 + round(p1.dist(p4) / det);
+    /*parts = 1 + round(p1.dist(p4) / det);
     for(var pa = 0; pa < parts; pa++){
         var p = map(pa, 0, parts-1, 0, 1);
         if(haswarp)
             p = power(p, waa);
+        if(!isFinite(p)){
+            p = fxrand();
+        }
         var x1 = lerp(p1.x, p4.x, p);
         var y1 = lerp(p1.y, p4.y, p);
         var z1 = lerp(p1.z, p4.z, p);
         var x2 = lerp(p2.x, p3.x, p);
         var y2 = lerp(p2.y, p3.y, p);
         var z2 = lerp(p2.z, p3.z, p);
+
+        var col2 = [col[0], col[1], col[2]];
+        var coll2 = [min(255, max(0, col2[0]*random(.88, 1.12))), min(255, max(0, col2[1]*random(.88, 1.12))), min(255, max(0, col2[2]*random(.88, 1.12)))]
+        var hsv1 = rgb2hsv(...coll2);
+        var rgb1 = hsv2rgb(...hsv1);
+        rgb1[0] *= 255;
+        rgb1[1] *= 255;
+        rgb1[2] *= 255;
+        pg.stroke(...coll2)
+
+        if(ismono){
+            if(flipbw){
+                pg.stroke(cl4);
+            }
+            else{
+                pg.stroke(cl3);
+            }
+        }
+
         pg.line(x1, y1, z1, x2, y2, z2);
-        pg.push();
-        pg.stroke(cl2);
-        pg.strokeWeight(2);
-        //pg.line(x1, y1, z1, x2, y2, z2);
-        pg.pop();
-    }
+        if(vv.x == 0 && hasgradientlines)
+            pg.line(x1, y1+2, z1+2, x2, y2, z2);
+        if(vv.y == 0 && hasgradientlines)
+            pg.line(x1+2, y1, z1+2, x2, y2, z2);
+        if(vv.z == 0 && hasgradientlines)
+            pg.line(x1+2, y1+2, z1, x2, y2, z2);
+    }*/
 }
 
 function getStroke(x0, y0, x1, y1, w0, w1, seed, raise0=1, detail0=1, nzamp0=1){
@@ -747,6 +1404,9 @@ function showall(){
 
     effect.setUniform('tex0', blurpass2);
     effect.setUniform('tex1', pg);
+    effect.setUniform('tex2', mask);
+    effect.setUniform('tex3', bgpg);
+    effect.setUniform('u_usemask', usemask*1.);
     effect.setUniform('u_resolution', [resx, resy]);
     effect.setUniform('u_mouse',[dir[0], [1]]);
     effect.setUniform('u_time', frameCount);

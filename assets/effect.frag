@@ -6,11 +6,14 @@ uniform vec3 tintColor;
 uniform vec3 tintColor2;
 uniform vec4 incolor;
 uniform float u_time;
+uniform float u_usemask;
 uniform float noiseamp;
 uniform float seed;
 uniform float hasmargin;
 uniform sampler2D tex0;
 uniform sampler2D tex1;
+uniform sampler2D tex2;
+uniform sampler2D tex3;
 varying vec2 vTexCoord;
 
 float randomNoise(vec2 p) {
@@ -109,6 +112,20 @@ void main() {
     vec2 st = uv*vec2(3.2, 13.)*195.64;
     uv = uv/2.;
     uv.y = 1. - uv.y;
+
+    vec4 mask0 = texture2D(tex2, uv);
+    vec4 maskb0 = mask0;
+    vec4 mask = mask0 * u_usemask + vec4(1.) * (1.-u_usemask);
+    vec4 maskb = mask;
+    if(maskb.r > 0.0){
+        maskb.rgb = vec3(1.);
+    }
+    if(maskb0.r > 0.0){
+        maskb0.rgb = vec3(1.);
+    }
+    vec2 uv0 = uv;
+    uv = uv + vec2(0.*54.)/u_resolution*vec2(-.5 + randomNoise(seed*.03+mask.rg), -.5 + randomNoise(seed*.03+mask.rg+.314));
+
     //st += st * abs(sin(u_time*0.002)*3.0);
     vec3 color = vec3(0.0);
 
@@ -146,11 +163,13 @@ void main() {
     vec2 uvgd = uv - 1.61*ff*vec2(1., 0.) + 0.*ff*vec2(1., 0.)/u_resolution*2.;
     vec2 uvbd = uv - 1.61*ff*vec2(1., 0.) - 0.*333.5*ff*vec2(1., 0.)/u_resolution*2.;
 
-    float cr = texture2D(tex0, uvr+vec2(3.,0.)/u_resolution).r;
-    float cg = texture2D(tex0, uvg+vec2(3.,0.)/u_resolution).g;
-    float cb = texture2D(tex0, uvb+vec2(3.,0.)/u_resolution).b;
+    float cr = texture2D(tex0, uvr+vec2(6.,0.)/u_resolution).r;
+    float cg = texture2D(tex0, uvg+vec2(6.,0.)/u_resolution).g;
+    float cb = texture2D(tex0, uvb+vec2(6.,0.)/u_resolution).b;
     vec4 imgc = vec4(cr, cg, cb, 1.0);
     vec4 imgg = texture2D(tex1, uv);
+    
+    vec4 bgpg = texture2D(tex3, uv);
 
     float crd = texture2D(tex1, uvrd).r;
     float cgd = texture2D(tex1, uvgd).g;
@@ -179,7 +198,7 @@ void main() {
     ff = smoothstep(0.001, 0.004, ff);
     outc = (.35 + .65*imgg)*imgd + .2427*(-.116+smoothstep(.4, .6, rndm));
     outc = imgc*.55 + imgd*.45;
-    outc = (imgg*.73+(1.-.73)*imgd);
+    outc = (imgg*.66+(1.-.66)*imgd);
     outc = min(outc, 1.);
     if(imgc.r > .7){
         //imgc.rgb = vec3(.7 - .7*smoothstep(.7, .9, imgc.r));
@@ -201,12 +220,6 @@ void main() {
         //outc = outc*0. + .1;
     }
 
-    float marg1 = .008;
-    float marg2 = .05 + .0021*(-.5 + fff(uv*82.1 + 281.3131,seed+25.61 ));
-    if(uv.x < marg1 || uv.x > 1.-marg1 || uv.y < marg1*u_resolution.x/u_resolution.y || uv.y > 1.-marg1*u_resolution.x/u_resolution.y){
-        outc = vec4(.1);
-    }
-
 
     float np = 1.;
     float edgesharpness = 0.98; // maximum is 1.
@@ -219,7 +232,17 @@ void main() {
     }
     np = 1. - np;
     outc = outc + np*(1. - outc - outc);
+
+    outc = bgpg*(1.-maskb.r) + outc*maskb.r;
+    outc.r = max(0., min(1., outc.r + .05*(-1.+2.*uv.y)));
+    outc.g = max(0., min(1., outc.g + .05*(-1.+2.*uv.y)));
+    outc.b = max(0., min(1., outc.b + .05*(-1.+2.*uv.y)));
     
+    float marg1 = 10./u_resolution.x;
+    float marg2 = .05 + .0021*(-.5 + fff(uv*82.1 + 281.3131,seed+25.61 ));
+    if(uv0.x < marg1 || uv0.x > 1.-marg1 || uv0.y < marg1 || uv0.y > 1.-marg1){
+        outc = vec4(.0);
+    }
     if(hasmargin > 0.01){
         //outc.rgb = (1.-pow(1.-uv.y,1.))*outc.rgb * (outc.r * (1.-pow(1.-uv.y,1.)*.5)) * tintColor2 + (1.-uv.y)*outc.rgb * (outc.r * (1.-pow(1.-uv.y,3.)*.8)) * tintColor;
     }
@@ -229,9 +252,10 @@ void main() {
     vec3 bvr = bv * vec3(0., 0., 0.) + (1.-bv)*tintColor;
     //outc.rgb += bvr*.4;
 
+
     float salt = randomNoise(uv+seed/1000000.+.3143+u_time*.0000+fbm(uv)*.02);
-    salt = .2*(-.15 + smoothstep(.96, .999, salt));
-    outc = .026 + outc*(.96 - .026);
+    salt = .3*(-.15 + smoothstep(.96, .999, salt));
+    outc = .026 + outc*(.97 - .026);
     outc.rgb += salt;
     
     float ssalt = randomNoise(uv+seed/1000000.+4.3+.3143+u_time*.0000+fbm(uv)*.02);
@@ -252,9 +276,15 @@ void main() {
     //outc = (.5 + .5*imgg)*imgd*imgd*imgd*imgd + .17*smoothstep(.12, .13, fff(uv*2612., seed+55.631));
     outc.a = 1.0;
 
+    //imgc.r = smoothstep(.4, .7, imgc.r);
+    //imgc.g = smoothstep(.4, .7, imgc.g);
+    //imgc.b = smoothstep(.4, .7, imgc.b);
+    //outc = outc + 0.2*imgc;
 
-    gl_FragColor = outc*.99 + imgc*(1.-.99);
+    float ff22 = smoothstep(.1, .3, fbm3(uv*vec2(2., 4.)+seed*.01, 1.*.08+1.));
+    outc = 1. - (1. - outc) * (1. - imgc*.21);
     
-    //gl_FragColor = vec4(ff*vec3(1.),1.);
+    gl_FragColor = vec4(outc.rgb, 1.);
+    //gl_FragColor = vec4(vec3(ff22),1.);
     //gl_FragColor = vec4(1.,0.,0.,1.);
 }

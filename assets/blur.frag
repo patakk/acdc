@@ -184,11 +184,11 @@ void main() {
     ff = ff + .2;
 	ff = smoothstep(.26+.4, .38+.4, ff);
 
-    float ffx = fff(uv*vec2(3.,3.)*44.2, seed+55.2214);
-    float ffy = fff(uv*vec2(3.,3.)*44.2, seed+123.651);
+    float ffx = fff(uv*vec2(3.,3.)*3.2, seed*224.+55.2214);
+    float ffy = fff(uv*vec2(3.,3.)*3.2, seed*224.+123.651);
 
-    ffx = smoothstep(.3, .9, ffx);
-    ffy = smoothstep(.3, .9, ffy);
+    ffx = smoothstep(.1, .9, ffx);
+    ffy = smoothstep(.1, .9, ffy);
 
 
     float dd = pow(length(uv-vec2(.5))/1.5, 2.)*3.;
@@ -202,10 +202,10 @@ void main() {
 
 	// use our blur function
 	vec3 blur;
-	//blur = gaussianBlur(tex0, uv, texelSize * vec2(ffx, ffy) * amp*4. + 0.*texelSize * vec2(ffx, ffy) * amp*3. * (3.*pow(uv.y, 6.)));
+	blur = gaussianBlur(tex0, uv, texelSize * vec2(ffx, ffy) * amp*24. + 0.*texelSize * vec2(ffx, ffy) * amp*3. * (3.*pow(uv.y, 6.)));
 	//blur = gaussianBlur(tex0, uv, texelSize * amp*15.*dir * dd);
 	//blur = gaussianBlur(tex0, uv, texelSize * ff2.xy * amp*1. * dd); // dd je za blurranje u kutevima
-	blur = gaussianBlur(tex0, uv, texelSize *  amp * 5.);
+	//blur = gaussianBlur(tex0, uv, texelSize *  amp * 15. * vec2(6., 1.));
 
   	//gl_FragColor = vec4(ffx,ffx,ffx, 1.0);
   	gl_FragColor = vec4(blur.rgb, 1.0);
