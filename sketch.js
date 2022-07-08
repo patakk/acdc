@@ -110,7 +110,7 @@ if(afew)
 
 
 var yang = (Math.floor(map(fxrand(), 0, 1, 0, 2))*90-45*(1-orth) + 0*map(fxrand(), 0, 1, 0, 3)) / 180 * 3.14159;
-var shouldRotate = fxrand() < .15 && !hastallspread;
+var shouldRotate = fxrand() < .1 && !hastallspread;
 
 
 function getArrangementString() {
