@@ -47,9 +47,10 @@ var hasgradientlines = fxrand() < .5;
 var flipbw = fxrand() < .5;
 var infill = fxrand() < .75;
 var hasparallels = fxrand() < .5;
-var allareparallels = fxrand() < .5;
+var allareparallels = fxrand() > .5;
 var hasshiftedlines = fxrand() < -1.5 && !hasparallels && !allareparallels;
 var hashollow = fxrand() < .5;
+var hashollowprob = map(fxrand(), 0, 1, 0.4, .5);
 var afew = fxrand() < .25;
 var uniform = fxrand() < 1.5;
 var disintegrated = fxrand() <  .08 && !ismono;
@@ -509,7 +510,7 @@ function setup(){
     }
 
 
-    pg.background(palette[(bgidx+8)%palette.length][0]*255, palette[(bgidx+8)%palette.length][1]*255, palette[(bgidx+8)%palette.length][2]*255);
+    pg.background(palette[(bgidx+7)%palette.length][0]*255, palette[(bgidx+7)%palette.length][1]*255, palette[(bgidx+7)%palette.length][2]*255);
     //if(usemask)
     //    pg.background(222);
 
@@ -1095,7 +1096,7 @@ function mybox(info){
         }
     }
     
-    var invs = fxrand() < .5 && hashollow && ii != 0;
+    var invs = fxrand() < hashollowprob && hashollow && ii != 0;
     if(ismono)
         invs = false;
     var haslines = fxrand() < lineprob && !invs || afew;
@@ -1111,8 +1112,8 @@ function mybox(info){
     //if(ii != 0) pg.translate(raaaa1, 0, 0);
     //pg.fill(cl1);
     if(!invs || afew){
-        mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
-        mysimplebox(mask, wx-0.000, wy-0.000, wz-0.000);
+        //mysimplebox(pg, wx-0.000, wy-0.000, wz-0.000);
+        //mysimplebox(mask, wx-0.000, wy-0.000, wz-0.000);
     }
     mask.pop();
     pg.pop();
