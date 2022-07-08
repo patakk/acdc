@@ -1,3 +1,8 @@
+var dd = {};
+var dd1 = {};
+var dd2 = {};
+var dd3 = {};
+//for(var k = 0; k < 303; k++){
 let canvas;
 var pg;
 var mask;
@@ -17,7 +22,7 @@ var WW, HH;
 var resx = 1400;
 var resy = 1400;
 var res = 1400;
-var zoom = 1;
+var zoom = 1.0;
 var globalseed = Math.floor(fxrand()*1000000);
 
 var hasmargin = 1.0 * (fxrand()*100 < 50);
@@ -29,16 +34,16 @@ var waa = map(fxrand(), 0, 1, .7, 2);
 var twodpos = [];
 
 var detmin = 6;
-var detmax = 16;
+var detmax = 9;
 var detu = Math.round(map(power(fxrand(), 3.), 0, 1, detmin, detmax));
 ////////////
 
 var numobjects = -1;
 var option = Math.floor(map(fxrand(), 0, 1, 0, 2));
 option = 0;
-var ismono = fxrand() < .1;
-var hasmonolith = fxrand() < .5;
-var hasgradientlines = fxrand() < 1.5;
+var ismono = fxrand() < .08;
+var hasmonolith = fxrand() < .25;
+var hasgradientlines = fxrand() < .5;
 var flipbw = fxrand() < .5;
 var infill = fxrand() < .75;
 var hasparallels = fxrand() < .5;
@@ -46,22 +51,26 @@ var allareparallels = fxrand() < .5;
 var hasshiftedlines = fxrand() < -1.5 && !hasparallels && !allareparallels;
 var hashollow = fxrand() < .5;
 var afew = fxrand() < .25;
-var uniform = fxrand() < .5;
-var disintegrated = fxrand() < .5 && !ismono;
+var uniform = fxrand() < 1.5;
+var disintegrated = fxrand() <  .08 && !ismono;
+var wdisint = map(fxrand(), 0, 1, 5, 25);
 var arrangement = 0;
-if(fxrand() < .3){
+if(fxrand() < .03){
     arrangement = 1;
+    //console.log(arrangement)
 } 
 
-var hastallspread = !afew && arrangement == 0 && !ismono && fxrand() < .1;
+var hastallspread = !afew && arrangement == 0 && !ismono && fxrand() < .06;
+var tallspreadx = map(fxrand(), 0, 1, .15, .5);
+var tallspready = map(fxrand(), 0, 1, .15, .5);
 
 
-var usemask = (option == 0) && fxrand() < .5;
+var usemask = (option == 0) && fxrand() < .1;
 
 if(afew)
     uniform = true;
 if(uniform){
-    detu = Math.round(map(fxrand(), 0, 1, detmin, detmin+4));
+    detu = Math.round(map(fxrand(), 0, 1, detmin, detmin+2));
 }
 
 var haswarp = (fxrand() < .5) && (option == 0) && uniform;
@@ -101,30 +110,98 @@ if(afew)
 
 
 var yang = (Math.floor(map(fxrand(), 0, 1, 0, 2))*90-45*(1-orth) + 0*map(fxrand(), 0, 1, 0, 3)) / 180 * 3.14159;
-var shoudRotate = fxrand() < .15 && !hastallspread;
+var shouldRotate = fxrand() < .15 && !hastallspread;
 
 
-function getVariantString(disintegrated, usemask) {
-    if(disintegrated)
-        return 'fragmented';
-    if(usemask)
-        return 'cutout';
-    return 'solid';
+function getArrangementString() {
+    if(arrangement == 0 && hastallspread){
+        return 'mess'
+    }
+    if(arrangement == 0 && hasmonolith){
+        return 'dominated'
+    }
+    if(arrangement == 0){
+        return 'loose'
+    }
+    if(arrangement == 1){
+        return 'array'
+    }
 }
 
-function getPaletteString(ismono) {
-    if (ismono) return "grayscale";
-    else return "color";
+function getIntegrityString() {
+    if(disintegrated && usemask){
+        return 'fragmented cutout'
+    }
+    if(disintegrated){
+        return 'fragmented'
+    }
+    if(usemask){
+        return 'cutout'
+    }
+    return 'solid'
 }
+
+function getPaletteString() {
+    if (ismono){
+        return "grayscale";
+    }
+    else{
+        if(infill){
+            return "color";
+        }
+        else{
+            return "darkened"
+        }
+    }
+}
+/*
+var kk = getPaletteString()+'_'+getArrangementString()+'_'+getIntegrityString();
+if(kk in dd){
+    dd[kk] += 1;
+}
+else{
+    dd[kk] = 1;
+}
+
+if(getPaletteString() in dd1){
+    dd1[getPaletteString()] += 1;
+}
+else{
+    dd1[getPaletteString()] = 1;
+}
+
+if(getArrangementString() in dd2){
+    dd2[getArrangementString()] += 1;
+}
+else{
+    dd2[getArrangementString()] = 1;
+}
+
+if(getIntegrityString() in dd3){
+    dd3[getIntegrityString()] += 1;
+}
+else{
+    dd3[getIntegrityString()] = 1;
+}
+}
+
+console.log(dd1);
+console.log(dd2);
+console.log(dd3);*/
 
 
 window.$fxhashFeatures = {
-    "palette": getPaletteString(ismono),
-    "variant": getVariantString(disintegrated, usemask),
+    "palette": getPaletteString(),
+    "arrangement": getArrangementString(),
+    "integrity": getIntegrityString(),
 }
+
+
+
 ///////
 
-console.log(window.$fxhashFeatures)
+console.log('hello');
+//console.log(window.$fxhashFeatures)
 
 
 
@@ -421,16 +498,18 @@ function setup(){
 
     var sshf = 0;
     if(!usemask)
-        sshf = 3;
+        sshf = 8;
     bgidx = floor(fxrand()*(palette.length));
-    var cou = 0;
+    var cou = 4;
     var rrr = rgb2hsv(palette[(bgidx+sshf)%palette.length][0], palette[(bgidx+sshf)%palette.length][1], palette[(bgidx+sshf)%palette.length][2]);
     while(rrr[1] > .8 && cou < 4){
         bgidx = floor(fxrand()*(palette.length));
         rrr = rgb2hsv(palette[(bgidx+sshf)%palette.length][0], palette[(bgidx+sshf)%palette.length][1], palette[(bgidx+sshf)%palette.length][2])
         cou++;
     }
-    pg.background(palette[(bgidx+3)%palette.length][0]*255, palette[(bgidx+3)%palette.length][1]*255, palette[(bgidx+3)%palette.length][2]*255);
+
+
+    pg.background(palette[(bgidx+8)%palette.length][0]*255, palette[(bgidx+8)%palette.length][1]*255, palette[(bgidx+8)%palette.length][2]*255);
     //if(usemask)
     //    pg.background(222);
 
@@ -450,6 +529,40 @@ function setup(){
         }
     }
 
+    /*var h1 = fxrand();
+    var h2 = fxrand();
+    var hcou = 0;
+    while(abs(h2-h1) < .1 && hcou++ < 4){
+        h2 = fxrand();
+    }
+    
+    var vv1 = fxrand()*.15 + .65;
+    var vv2 = fxrand();
+    var hcou = 0;
+    while(abs(vv2-vv1) < .1 && hcou++ < 4){
+        h2 = fxrand();
+    }
+    
+    var coll1 = hsl2rgb(h1, .3, vv1);
+    var coll2 = hsl2rgb(h2, .3, vv1/2);
+    
+    //pg.background(127);
+    //bgpg.background(188);
+
+    if(ismono){
+        if(fxrand() < .5){
+            pg.background(cl2);
+            bgpg.background(red(cl2)+7, green(cl2)+7, blue(cl2)+7);
+        }
+        else{
+            pg.background(cl1);
+            bgpg.background(red(cl1)+9, green(cl1)+9, blue(cl1)+9);
+        }
+    }
+    else{
+        pg.background(coll1[0]*255, coll1[1]*255, coll1[2]*255);
+        bgpg.background(coll2[0]*255, coll2[1]*255, coll2[2]*255);
+    }*/
 
     drawShapes();    
 
@@ -489,7 +602,9 @@ var timer = -1;
 var num = 20;
 
 function generateBoxes1(){
-    numobjects = Math.round(map(fxrand(), 0, 1, 45, 100))
+    numobjects = Math.round(map(fxrand(), 0, 1, 25, 45))
+    if(hastallspread)
+        numobjects = Math.round(map(fxrand(), 0, 1, 50, 100))
     if(afew){
         numobjects = Math.round(map(fxrand(), 0, 1, 5, 15))
     }
@@ -502,8 +617,8 @@ function generateBoxes1(){
     var infos = [];
     var volume = 200*200*200 * .1;
     for(var k = 0; k < numobjects; k++){
-        var bx = random(-222, 222)*1.7;
-        var by = random(-222, 222)*(1+ 2.7*hastallspread);
+        var bx = random(-222, 222)*(1.7 + 2.*hastallspread*tallspreadx);
+        var by = random(-222, 222)*(1 + 2.7*hastallspread*tallspready);
         var bz = random(-222, 222)*1;
         var wx = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*(.5 + random(.2, .5)*afew);
         var wy = map(pow(fxrand(), 1.6), 0, 1, 50, 400)*1.5;
@@ -560,6 +675,7 @@ function generateBoxes2(){
     var miz = 100100;
     var mmz = -101000;
     var infos = [];
+    var raaaaa = fxrand()*10;
     var volume = 200*200*200 * .1;
     var wwx = random(400, 444);
     var wx = wwx/numobjects;
@@ -573,7 +689,7 @@ function generateBoxes2(){
         var bx = map(k, 0, numobjects, -(wwx/2+2), (wwx/2+2))
         var by = random(-222, 222);
         var bz = random(-222, 222);
-        var rx = map(k, 0, numobjects-1, 0, PI/2*circs)*0 + k*inc;
+        var rx = map(k, 0, numobjects-1, 0, PI/2*circs)*0 + k*inc + raaaaa;
         var ry = radians(random(-30, 30));
         var rz = radians(random(-30, 30));
         infos.push([bx, by, bz, wx, wy, wz, rx, ry, rz, k]);
@@ -664,7 +780,7 @@ function drawShapes(){
     
 
     mask.push();
-    if(shoudRotate){
+    if(shouldRotate){
         mask.rotateZ(PI/2);
     }
     mask.rotateY(yang);
@@ -702,7 +818,7 @@ function drawShapes(){
     //debugxyz(pg);
 
     if(!hasmonolith) pg.translate(-center.x, -center.y);
-    if(shoudRotate){
+    if(shouldRotate){
         pg.rotateZ(PI/2);
     }
     pg.rotateY(yang);
@@ -711,7 +827,7 @@ function drawShapes(){
     //pg.rotateY(random(-.1,.1));
 
     if(!hasmonolith) mask.translate(-center.x, -center.y);
-    if(shoudRotate){
+    if(shouldRotate){
         mask.rotateZ(PI/2);
     }
     mask.rotateY(yang);
@@ -850,49 +966,51 @@ function map(v, v1, v2, v3, v4){
 }
 
 function mysimplebox(pgr, wx, wy, wz){
+    var fac = 1;
+    var wdisintq = wdisint * fac;
     pgr.push();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(-wx/2, -wy/2, -wz/2);
     pgr.vertex(-wx/2, -wy/2, +wz/2);
     pgr.vertex(-wx/2, +wy/2, +wz/2);
     pgr.vertex(-wx/2, +wy/2, -wz/2);
-    pgr.endShape();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.endShape(CLOSE);
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(-wx/2, +wy/2, -wz/2);
     pgr.vertex(-wx/2, +wy/2, +wz/2);
     pgr.vertex(+wx/2, +wy/2, +wz/2);
     pgr.vertex(+wx/2, +wy/2, -wz/2);
-    pgr.endShape();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.endShape(CLOSE);
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(-wx/2, -wy/2, +wz/2);
     pgr.vertex(-wx/2, +wy/2, +wz/2);
     pgr.vertex(+wx/2, +wy/2, +wz/2);
     pgr.vertex(+wx/2, -wy/2, +wz/2);
-    pgr.endShape();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.endShape(CLOSE);
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(+wx/2, -wy/2, -wz/2);
     pgr.vertex(+wx/2, -wy/2, +wz/2);
     pgr.vertex(+wx/2, +wy/2, +wz/2);
     pgr.vertex(+wx/2, +wy/2, -wz/2);
-    pgr.endShape();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.endShape(CLOSE);
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(-wx/2, -wy/2, -wz/2);
     pgr.vertex(-wx/2, -wy/2, +wz/2);
     pgr.vertex(+wx/2, -wy/2, +wz/2);
     pgr.vertex(+wx/2, -wy/2, -wz/2);
-    pgr.endShape();
-    if(disintegrated) pg.translate(random(-20,20), random(-20,20), random(-20,20));
+    pgr.endShape(CLOSE);
+    if(disintegrated) pg.translate(wdisintq*random(-1,1), wdisintq*random(-1,1), wdisintq*random(-1,1));
     pgr.beginShape();
     pgr.vertex(-wx/2, -wy/2, -wz/2);
     pgr.vertex(-wx/2, +wy/2, -wz/2);
     pgr.vertex(+wx/2, +wy/2, -wz/2);
     pgr.vertex(+wx/2, -wy/2, -wz/2);
-    pgr.endShape();
+    pgr.endShape(CLOSE);
     pgr.pop();
     return;
 }
